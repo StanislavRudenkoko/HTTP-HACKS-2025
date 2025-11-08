@@ -20,11 +20,11 @@ ALL - Displays the status of all bins
 
 subscriptions_help_message = """
 SUBSCRIPTIONS:
-SHOW - Displays bins you are subscribed to.
-ADD ID {BIN_ID} - Subscribe to a bin.
-ADD BUILDING {BUILDING} - Subscribe to all bins in that building.
-DELETE ALL - Unsubscribe from all bins.
-DELETE {BIN_ID} - Unsubscribe from a bin.
+SHOW - Displays bins you are subscribed to
+ADD ID {BIN_ID} - Subscribe to a bin
+ADD BUILDING {BUILDING} - Subscribe to all bins in that building
+DELETE ALL - Unsubscribe from all bins
+DELETE {BIN_ID} - Unsubscribe from a bin
 """
 
 print(subscriptions_help_message)
@@ -45,9 +45,9 @@ db = psycopg.connect(
 
 cur = db.cursor()
 
-cur.execute("SET search_path TO smart_trashcan")
+cur.execute("SET search_path TO smart_trashcan;")
 
-def format_sql(resp: MessagingResponse) -> None:
+def send_sql(resp: MessagingResponse) -> None:
     message = ""
     for trashcan in cur.fetchall():
         id = trashcan[0]
@@ -75,24 +75,57 @@ def sms_reply() -> str:
             
             match body[1]:
                 case "all":
-                    cur.execute("SELECT * FROM trashcans")
-                    format_sql(resp)
+                    cur.execute("SELECT * FROM trashcans;")
+                    send_sql(resp)
 
                 case _:
-                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[1])}%'")
-                    format_sql(resp)
+                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[1])}%';")
+                    send_sql(resp)
         
         case "subscriptions":
             if len(body) == 1:
                 resp.message(subscriptions_help_message)
                 return str(resp)
+            
+            phone_num = request.values.get("From", None)
+            match body[1]:
+                case "show":
+                    # Show all subscriptions
+                    cur.execute(f"SELECT id, name, status FROM subscription JOIN trashcans ON subscriptions.phone_num='{phone_num}';")
+                    send_sql(resp)
+                    
+                case "add":
+                    argument = re.escape(body[3])
+                    match body[2]:
+                        # Add a bin by ID
+                        case "id":
+                            cur.execute(f"INSERT INTO subscription(id, phone_num) VALUES ({argument}, {phone_num});")
+                        # Add all bins in a building
+                        case "building":
+                            subscriptions_added = 0
+                            cur.execute(f"SELECT id FROM trashcans WHERE LOWER(location) LIKE '%{argument}%';")
+                            trashcans = cur.fetchall()
+                            for trashcan in trashcans:
+                                cur.execute(f"INSERT INTO subscription(id, phone_num) VALUES ({trashcan[0]}, '{phone_num})';")
+                                subscriptions_added += 1
+                                
+                            resp.message(f"{subscriptions_added} subscriptions for building {argument} added successfully.")
+                
+                case "delete":
+                    match body[2]:
+                        # Remove subscription from all bins
+                        case "all":
+                            cur.execute(f"DELETE FROM subscription WHERE phone_num='{phone_num}';")
+                        # Remove subscription from a specific bin
+                        case _:
+                            cur.execute(f"DELETE FROM subscription WHERE phone_num='{phone_num}' AND id={re.escape(body[2])}")
         
         case _:
             resp.message("Sorry, I didn't understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
 
     return str(resp)
 
-
+# Handles everything for receiving data from bins
 @app.route("/data", methods={"GET", "POST"})
 def data_fetch() -> str:
     body = request.get_json()
