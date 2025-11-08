@@ -34,13 +34,13 @@ public class DatabaseManager {
                 stmt.execute("SET search_path TO " + DEFAULT_SCHEMA);
             }
             
-            System.out.println("✓ Successfully connected to database!");
-            System.out.println("✓ Default schema set to: " + DEFAULT_SCHEMA);
+            System.out.println("[OK] Successfully connected to database!");
+            System.out.println("[OK] Default schema set to: " + DEFAULT_SCHEMA);
             return true;
             
         } catch (SQLException e) {
             connection = null;
-            String errorMessage = "✗ Failed to connect to database: ";
+            String errorMessage = "[ERROR] Failed to connect to database: ";
             
             // Provide more specific error messages
             if (e.getMessage().contains("Connection refused")) {
@@ -72,10 +72,10 @@ public class DatabaseManager {
         try {
             connection.close();
             connection = null;
-            System.out.println("✓ Database connection closed successfully.");
+            System.out.println("[OK] Database connection closed successfully.");
             return true;
         } catch (SQLException e) {
-            System.err.println("✗ Error closing database connection: " + e.getMessage());
+            System.err.println("[ERROR] Error closing database connection: " + e.getMessage());
             return false;
         }
     }
@@ -95,7 +95,7 @@ public class DatabaseManager {
      */
     public void testConnection() {
         if (connection == null) {
-            System.out.println("✗ Connection test failed: No active database connection.");
+            System.out.println("[ERROR] Connection test failed: No active database connection.");
             return;
         }
 
@@ -106,12 +106,12 @@ public class DatabaseManager {
                 try (Statement stmt = connection.createStatement()) {
                     stmt.executeQuery("SELECT 1");
                 }
-                System.out.println("✓ Connection test successful! Database is accessible.");
+                System.out.println("[OK] Connection test successful! Database is accessible.");
             } else {
-                System.out.println("✗ Connection test failed: Connection is no longer valid.");
+                System.out.println("[ERROR] Connection test failed: Connection is no longer valid.");
             }
         } catch (SQLException e) {
-            System.err.println("✗ Connection test failed: " + e.getMessage());
+            System.err.println("[ERROR] Connection test failed: " + e.getMessage());
             System.err.println("  Error code: " + e.getErrorCode());
             System.err.println("  SQL state: " + e.getSQLState());
         }

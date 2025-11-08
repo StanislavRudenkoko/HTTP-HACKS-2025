@@ -85,24 +85,85 @@ public class Trashcan {
             }
         }
 
-        // Truncate strings to fit table columns if needed
-        String truncatedName = name != null && name.length() > 19 
-            ? name.substring(0, 16) + "..." 
-            : (name != null ? name : "N/A");
-        String truncatedLocation = location != null && location.length() > 22 
-            ? location.substring(0, 19) + "..." 
-            : (location != null ? location : "N/A");
-        String truncatedStatus = status != null && status.length() > 5 
-            ? status.substring(0, 5) 
-            : (status != null ? status : "N/A");
+        // Truncate strings to fit table columns if needed (with smart truncation)
+        int nameWidth = 45;
+        int locationWidth = 40;
+        int statusWidth = 8;
 
-        // Format to match table: | ID | Name (19) | Location (22) | Status (5) | Last Updated (21) |
-        return String.format("| %-3d| %-19s| %-22s| %-5s| %-21s|",
-            id,
-            truncatedName,
-            truncatedLocation,
-            truncatedStatus,
-            formattedTimestamp);
+        String truncatedName = truncateString(name != null ? name : "N/A", nameWidth);
+        String truncatedLocation = truncateString(location != null ? location : "N/A", locationWidth);
+        String truncatedStatus = truncateString(status != null ? status : "N/A", statusWidth);
+
+        // Format to match table: | ID (5) | Name (45) | Location (40) | Status (8) |
+        // Last Updated (20) |
+        return String.format("| %-5d| %-45s| %-40s| %-8s| %-20s|",
+                id,
+                truncatedName,
+                truncatedLocation,
+                truncatedStatus,
+                formattedTimestamp);
+    }
+
+    /**
+     * Truncates a string to fit within the specified width, adding "..." if
+     * truncated.
+     * 
+     * @param str   The string to truncate
+     * @param width The maximum width
+     * @return The truncated string
+     */
+    private String truncateString(String str, int width) {
+        if (str == null) {
+            return "N/A";
+        }
+        if (str.length() <= width) {
+            return str;
+        }
+        // Truncate and add ellipsis
+        return str.substring(0, width - 3) + "...";
+    }
+
+    /**
+     * Returns a detailed string representation of the trashcan without truncation.
+     * 
+     * @return Detailed string representation
+     */
+    public String toDetailedString() {
+        String formattedTimestamp = "N/A";
+        if (lastUpdated != null) {
+            String timestampStr = lastUpdated.toString();
+            if (timestampStr.length() >= 19) {
+                formattedTimestamp = timestampStr.substring(0, 19);
+            } else {
+                formattedTimestamp = timestampStr;
+            }
+        }
+
+        // Box width is 64 characters total
+        // Format breakdown: "║ " (2) + label (14) + content (47) + "║" (1) = 64
+        // Remove the space before ║ to fix alignment
+        int boxWidth = 64;
+        int labelWidth = 14;
+        // Total: 2 (left) + 14 (label) + content + 1 (right) = 64
+        // Therefore: content = 64 - 2 - 14 - 1 = 47
+        int contentWidth = boxWidth - 2 - labelWidth - 1; // 47
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("╔════════════════════════════════════════════════════════════════╗\n");
+        sb.append("║                    TRASHCAN DETAILS                            ║\n");
+        sb.append("╠════════════════════════════════════════════════════════════════╣\n");
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "ID:",
+                id != 0 ? String.valueOf(id) : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Name:",
+                name != null ? name : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Location:",
+                location != null ? location : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Status:",
+                status != null ? status : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Last Updated:",
+                formattedTimestamp));
+        sb.append("╚════════════════════════════════════════════════════════════════╝");
+
+        return sb.toString();
     }
 }
-
