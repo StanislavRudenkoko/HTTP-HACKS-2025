@@ -74,10 +74,11 @@ def sms_reply() -> str:
                 return str(resp)
             
             match body[1]:
+                # Show all trashcans
                 case "all":
                     cur.execute("SELECT * FROM trashcans;")
                     send_sql(resp)
-
+                # Show all trashcans in a specified location
                 case _:
                     cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[1])}%';")
                     send_sql(resp)
@@ -89,8 +90,8 @@ def sms_reply() -> str:
             
             phone_num = request.values.get("From", None)
             match body[1]:
+                # Show all subscriptions
                 case "show":
-                    # Show all subscriptions
                     cur.execute(f"SELECT id, name, status FROM subscription JOIN trashcans ON subscriptions.phone_num='{phone_num}';")
                     send_sql(resp)
                     
@@ -119,7 +120,8 @@ def sms_reply() -> str:
                         # Remove subscription from a specific bin
                         case _:
                             cur.execute(f"DELETE FROM subscription WHERE phone_num='{phone_num}' AND id={re.escape(body[2])}")
-        
+                            
+        # Unrecognized message
         case _:
             resp.message("Sorry, I didn't understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
 
@@ -130,9 +132,21 @@ def sms_reply() -> str:
 def data_fetch() -> str:
     body = request.get_json()
     
-    id = re.escape(body['id'])
-    status = re.escape(body['status'])
+    id = int(body['id'])
+    status = int(body['status'])
     
-    cur.execute(f"UPDATE trashcans SET status='{status}', last_updated=NOW() WHERE id='{id}'")
+    cur.execute(f"UPDATE trashcans SET status={status}, last_updated=NOW() WHERE id={id};")
     
-    return "Data was succesfully stored"
+    if status >= 90:
+        cur.execute(f"SELECT location FROM trashcans WHERE id={id};")
+        trashcan = cur.fetchone()[0]
+        cur.execute(f"SELECT phone_num FROM subscription WHERE id={id};")
+        phone_nums = cur.fetchall()
+        for phone_num in phone_nums:
+            client.messages.create(
+                body=f"Trashcan {trashcan} is full!",
+                from_="+19302033111",
+                to=phone_num[0].replace("\\", "")
+            )
+    
+    return "Data was succesfully stored."
