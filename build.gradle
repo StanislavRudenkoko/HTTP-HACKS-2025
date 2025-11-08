@@ -11,17 +11,17 @@ repositories {
 }
 
 dependencies {
-    // ✅ Testing
+    // Testing
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    // ✅ PostgreSQL Database Driver
+    // PostgreSQL Database Driver
     implementation 'org.postgresql:postgresql:42.7.3'
 
-    // ✅ Lanterna for Terminal UI
+    // Lanterna for Terminal UI
     implementation 'com.googlecode.lanterna:lanterna:3.1.1'
 
-    // ✅ Twilio for SMS notifications
+    // Twilio for SMS notifications
     implementation 'com.twilio.sdk:twilio:9.14.1'
 }
 
@@ -30,6 +30,22 @@ test {
 }
 
 application {
-    // ✅ Main class of your app (update if your main file has a different package)
-    mainClass = 'org.example.Main'
+    // Main class of your app (no package)
+    mainClass = 'Main'
+}
+
+// Fat JAR configuration (includes all dependencies)
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'Main'
+        )
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    // ✅ Ignore duplicates like META-INF/LICENSE.txt
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
