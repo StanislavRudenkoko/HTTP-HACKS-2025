@@ -91,18 +91,47 @@ def display_trashcans(trashcans):
 
 
 # --------------------------
-# Display / Format Route
+# Format Route
 # --------------------------
 def format_route(route):
-    """Returns a formatted string for the janitor's route."""
+    """Returns a formatted string for the janitor's route, with dashes replaced by spaces."""
     if not route:
         return "No full trashcans to route."
 
     lines = ["=== Optimized Janitor Route ==="]
     for idx, t in enumerate(route, start=1):
-        lines.append(f"{idx}. {t[1]} (Building: {t[2]}, Floor: {t[3]}, Status: {t[6]}%)")
+        name_with_spaces = t[1].replace("-", " ")
+        lines.append(f"{idx}. {name_with_spaces}")
 
     return "\n".join(lines)
+
+
+# --------------------------
+# Modular function for SMS
+# --------------------------
+def get_route_text_from_cursor(cur, threshold=75):
+    """
+    Accepts a psycopg cursor and returns a formatted route string.
+    Can be called from another module to send SMS.
+    :param cur for db cursor
+    :param threshold  percentage after which a can is considered full
+    """
+    cur.execute("""
+                SELECT id,
+                       name,
+                       building,
+                       floor,
+                       latitude,
+                       longitude,
+                       status,
+                       last_updated
+                FROM smart_trashcan.trashcans
+                WHERE status >= %s
+                ORDER BY building, floor, name;
+                """, (threshold,))
+    trashcans = cur.fetchall()
+    route = build_route(trashcans)
+    return format_route(route)
 
 
 # --------------------------
@@ -118,10 +147,7 @@ def main():
         print("\n--- Full Trashcans ---")
         display_trashcans(full_trashcans)
 
-        route = build_route(full_trashcans)
-        route_text = format_route(route)
-
-        # Print to console or send via SMS
+        route_text = format_route(build_route(full_trashcans))
         print("\n" + route_text)
 
     finally:
