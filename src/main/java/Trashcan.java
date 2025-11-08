@@ -89,24 +89,26 @@ public class Trashcan {
         int nameWidth = 45;
         int locationWidth = 40;
         int statusWidth = 8;
-        
+
         String truncatedName = truncateString(name != null ? name : "N/A", nameWidth);
         String truncatedLocation = truncateString(location != null ? location : "N/A", locationWidth);
         String truncatedStatus = truncateString(status != null ? status : "N/A", statusWidth);
 
-        // Format to match table: | ID (5) | Name (45) | Location (40) | Status (8) | Last Updated (20) |
+        // Format to match table: | ID (5) | Name (45) | Location (40) | Status (8) |
+        // Last Updated (20) |
         return String.format("| %-5d| %-45s| %-40s| %-8s| %-20s|",
-            id,
-            truncatedName,
-            truncatedLocation,
-            truncatedStatus,
-            formattedTimestamp);
+                id,
+                truncatedName,
+                truncatedLocation,
+                truncatedStatus,
+                formattedTimestamp);
     }
-    
+
     /**
-     * Truncates a string to fit within the specified width, adding "..." if truncated.
+     * Truncates a string to fit within the specified width, adding "..." if
+     * truncated.
      * 
-     * @param str The string to truncate
+     * @param str   The string to truncate
      * @param width The maximum width
      * @return The truncated string
      */
@@ -120,7 +122,7 @@ public class Trashcan {
         // Truncate and add ellipsis
         return str.substring(0, width - 3) + "...";
     }
-    
+
     /**
      * Returns a detailed string representation of the trashcan without truncation.
      * 
@@ -136,19 +138,32 @@ public class Trashcan {
                 formattedTimestamp = timestampStr;
             }
         }
-        
+
+        // Box width is 64 characters total
+        // Format breakdown: "║ " (2) + label (14) + content (47) + "║" (1) = 64
+        // Remove the space before ║ to fix alignment
+        int boxWidth = 64;
+        int labelWidth = 14;
+        // Total: 2 (left) + 14 (label) + content + 1 (right) = 64
+        // Therefore: content = 64 - 2 - 14 - 1 = 47
+        int contentWidth = boxWidth - 2 - labelWidth - 1; // 47
+
         StringBuilder sb = new StringBuilder();
         sb.append("╔════════════════════════════════════════════════════════════════╗\n");
         sb.append("║                    TRASHCAN DETAILS                            ║\n");
         sb.append("╠════════════════════════════════════════════════════════════════╣\n");
-        sb.append(String.format("║ ID:            %-45d║\n", id));
-        sb.append(String.format("║ Name:          %-45s║\n", name != null ? name : "N/A"));
-        sb.append(String.format("║ Location:      %-45s║\n", location != null ? location : "N/A"));
-        sb.append(String.format("║ Status:        %-45s║\n", status != null ? status : "N/A"));
-        sb.append(String.format("║ Last Updated:   %-45s║\n", formattedTimestamp));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "ID:",
+                id != 0 ? String.valueOf(id) : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Name:",
+                name != null ? name : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Location:",
+                location != null ? location : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Status:",
+                status != null ? status : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Last Updated:",
+                formattedTimestamp));
         sb.append("╚════════════════════════════════════════════════════════════════╝");
-        
+
         return sb.toString();
     }
 }
-
