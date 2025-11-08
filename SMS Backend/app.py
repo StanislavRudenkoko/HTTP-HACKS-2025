@@ -7,11 +7,27 @@ import os, psycopg, re
 load_dotenv()
 
 help_message = """
-                OPTIONS:\n
-                1. ? - Shows this help menu.\n
-                2. SHOW ALL - Displays the status of all trashcans.\n
-                3. SHOW {BUILDING} - Displays the status of all trashcans in that building.
-                """
+Type a command name followed by arguments to run a command (ex. SHOW ALL)\n
+? SHOW - Options for show command
+? SUBSCRIPTIONS - Options for subscriptions
+"""
+
+show_help_message = """
+SHOW:
+ALL - Displays the status of all bins
+{BUILDING} - Displays the status of all bins in that building
+"""
+
+subscriptions_help_message = """
+SUBSCRIPTIONS:
+SHOW - Displays bins you are subscribed to.
+ADD ID {BIN_ID} - Subscribe to a bin.
+ADD BUILDING {BUILDING} - Subscribe to all bins in that building.
+DELETE ALL - Unsubscribe from all bins.
+DELETE {BIN_ID} - Unsubscribe from a bin.
+"""
+
+print(subscriptions_help_message)
 
 account_sid = os.environ["TWILIO_ACCOUNT_SID"]
 auth_token = os.environ["TWILIO_AUTH_TOKEN"]
@@ -53,16 +69,26 @@ def sms_reply() -> str:
         case "?":
             resp.message(help_message)
         case "show":
+            if len(body) == 1:
+                resp.message(show_help_message)
+                return str(resp)
+            
             match body[1]:
                 case "all":
                     cur.execute("SELECT * FROM trashcans")
                     format_sql(resp)
 
                 case _:
-                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{body[1]}%'")
+                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[1])}%'")
                     format_sql(resp)
+        
+        case "subscriptions":
+            if len(body) == 1:
+                resp.message(subscriptions_help_message)
+                return str(resp)
+        
         case _:
-            resp.message("Sorry, I didn't understand that.\n" + help_message)
+            resp.message("Sorry, I didn't understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
 
     return str(resp)
 
