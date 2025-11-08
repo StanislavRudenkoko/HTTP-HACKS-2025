@@ -1,122 +1,487 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
-    private static Connection connection = null;
+    private static DatabaseManager dbManager = new DatabaseManager();
+    private static TrashcanService trashcanService = new TrashcanService(dbManager);
     private static Scanner scanner = new Scanner(System.in);
+    private static List<Trashcan> inMemoryTrashcans = new ArrayList<>();
+    private static List<Trashcan> originalTrashcans = new ArrayList<>(); // Snapshot from DB
+    private static int nextTempId = -1; // For new trashcans (negative IDs)
+    private static boolean hasUnsavedChanges = false;
 
     public static void main(String[] args) {
         boolean running = true;
+        boolean firstRun = true;
 
         while (running) {
+            clearScreen();
+
+            if (firstRun) {
+                System.out.println("╔════════════════════════════════════════╗");
+                System.out.println("║     Welcome to Smart Trashcan App      ║");
+                System.out.println("╚════════════════════════════════════════╝");
+                System.out.println();
+                firstRun = false;
+            }
+
             printMenu();
             System.out.print("Choose an option: ");
-            String choice = scanner.nextLine();
+            String choice = scanner.nextLine().trim();
+
+            boolean isConnected = dbManager.isConnected();
 
             switch (choice) {
                 case "1":
                     connectToDatabase();
+                    waitForEnter();
                     break;
                 case "2":
-                    if (checkConnection()) viewTrashcans();
+                    if (isConnected) {
+                        viewAllTrashcans();
+                    } else {
+                        running = false;
+                        disconnectDatabase();
+                        System.out.println("Exiting. Goodbye!");
+                    }
+                    if (running)
+                        waitForEnter();
                     break;
                 case "3":
-                    System.out.println("Add Trashcan feature coming soon!");
+                    if (isConnected) {
+                        addTrashcan();
+                        waitForEnter();
+                    } else {
+                        System.out.println("✗ Invalid option. Please try again.");
+                        waitForEnter();
+                    }
                     break;
                 case "4":
-                    System.out.println("Update Trashcan feature coming soon!");
+                    if (isConnected) {
+                        updateTrashcan();
+                        waitForEnter();
+                    } else {
+                        System.out.println("✗ Invalid option. Please try again.");
+                        waitForEnter();
+                    }
                     break;
                 case "5":
-                    System.out.println("Delete Trashcan feature coming soon!");
+                    if (isConnected) {
+                        deleteTrashcan();
+                        waitForEnter();
+                    } else {
+                        System.out.println("✗ Invalid option. Please try again.");
+                        waitForEnter();
+                    }
                     break;
                 case "6":
-                    System.out.println("View Subscribers feature coming soon!");
+                    if (isConnected) {
+                        saveTrashcansToDatabase();
+                        waitForEnter();
+                    } else {
+                        System.out.println("✗ Invalid option. Please try again.");
+                        waitForEnter();
+                    }
                     break;
                 case "7":
-                    System.out.println("Add Subscriber feature coming soon!");
-                    break;
-                case "8":
-                    System.out.println("Delete Subscriber feature coming soon!");
-                    break;
-                case "9":
-                    running = false;
-                    disconnectDatabase();
-                    System.out.println("Exiting. Goodbye!");
+                    if (isConnected) {
+                        if (hasUnsavedChanges) {
+                            System.out.print("\n⚠ You have unsaved changes. Are you sure you want to exit? (yes/no): ");
+                            String confirm = scanner.nextLine().trim().toLowerCase();
+                            if (!confirm.equals("yes") && !confirm.equals("y")) {
+                                waitForEnter();
+                                break;
+                            }
+                        }
+                        running = false;
+                        disconnectDatabase();
+                        System.out.println("Exiting. Goodbye!");
+                    } else {
+                        System.out.println("✗ Invalid option. Please try again.");
+                        waitForEnter();
+                    }
                     break;
                 default:
-                    System.out.println("Invalid option. Please try again.");
+                    System.out.println("✗ Invalid option. Please try again.");
+                    waitForEnter();
             }
-
-            System.out.println(); // Empty line for spacing
         }
 
         scanner.close();
     }
 
     private static void printMenu() {
+        boolean isConnected = dbManager.isConnected();
+
         System.out.println("╔════════════════════════════════╗");
         System.out.println("║       Smart Trashcan App       ║");
         System.out.println("╠════════════════════════════════╣");
         System.out.println("║ 1. Connect to Database         ║");
-        System.out.println("║ 2. View Trashcans              ║");
-        System.out.println("║ 3. Add Trashcan                ║");
-        System.out.println("║ 4. Update Trashcan             ║");
-        System.out.println("║ 5. Delete Trashcan             ║");
-        System.out.println("║ 6. View Subscribers            ║");
-        System.out.println("║ 7. Add Subscriber              ║");
-        System.out.println("║ 8. Delete Subscriber           ║");
-        System.out.println("║ 9. Exit                        ║");
+
+        if (isConnected) {
+            System.out.println("║ 2. View Trashcans              ║");
+            System.out.println("║ 3. Add Trashcan                ║");
+            System.out.println("║ 4. Update Trashcan             ║");
+            System.out.println("║ 5. Delete Trashcan             ║");
+            System.out.println("║ 6. Save Changes to Database    ║");
+        }
+
+        System.out.println("║ " + (isConnected ? "7" : "2") + ". Exit                        ║");
         System.out.println("╚════════════════════════════════╝");
-    }
 
-    private static void connectToDatabase() {
-        System.out.print("Enter DB URL (jdbc:postgresql://host:port/dbname): ");
-        String url = scanner.nextLine();
-        System.out.print("Enter DB username: ");
-        String user = scanner.nextLine();
-        System.out.print("Enter DB password: ");
-        String password = scanner.nextLine();
-
-        try {
-            connection = DriverManager.getConnection(url, user, password);
-            System.out.println("Connected to database!");
-        } catch (SQLException e) {
-            System.out.println("Failed to connect: " + e.getMessage());
+        if (isConnected) {
+            System.out.println("\n✓ Connected to database");
+            if (hasUnsavedChanges) {
+                System.out.println("⚠ You have unsaved changes");
+            }
+        } else {
+            System.out.println("\n⚠ Not connected. Please connect to database first.");
         }
     }
 
+    private static void connectToDatabase() {
+        System.out.println("\n--- Connect to Database ---");
+        System.out.print("Enter DB URL (e.g., jdbc:postgresql://localhost:5432/dbname): ");
+        String url = scanner.nextLine().trim();
+
+        if (url.isEmpty()) {
+            System.out.println("✗ Error: Database URL cannot be empty.");
+            return;
+        }
+
+        System.out.print("Enter DB username: ");
+        String user = scanner.nextLine().trim();
+
+        if (user.isEmpty()) {
+            System.out.println("✗ Error: Username cannot be empty.");
+            return;
+        }
+
+        System.out.print("Enter DB password: ");
+        String password = scanner.nextLine().trim();
+
+        if (dbManager.connect(url, user, password)) {
+            // Load trashcans from database into memory
+            loadTrashcansFromDatabase();
+        }
+    }
+
+    private static void viewAllTrashcans() {
+        if (!checkConnection())
+            return;
+
+        System.out.println("\n--- View All Trashcans (In-Memory) ---");
+        if (inMemoryTrashcans.isEmpty()) {
+            System.out.println("No trashcans in memory.");
+        } else {
+            trashcanService.displayTrashcans(inMemoryTrashcans);
+            if (hasUnsavedChanges) {
+                System.out.println("\n⚠ Note: You have unsaved changes. Use option 6 to save to database.");
+            }
+        }
+    }
+
+    private static void addTrashcan() {
+        if (!checkConnection())
+            return;
+
+        System.out.println("\n--- Add New Trashcan (In-Memory) ---");
+
+        System.out.print("Enter trashcan name: ");
+        String name = scanner.nextLine().trim();
+        if (name.isEmpty()) {
+            System.out.println("✗ Error: Name cannot be empty.");
+            return;
+        }
+
+        System.out.print("Enter location: ");
+        String location = scanner.nextLine().trim();
+        // Location can be empty/null
+
+        System.out.print("Enter status (empty/half/full): ");
+        String status = scanner.nextLine().trim().toLowerCase();
+        if (!status.equals("empty") && !status.equals("half") && !status.equals("full")) {
+            System.out.println("✗ Error: Status must be 'empty', 'half', or 'full'.");
+            return;
+        }
+
+        // Create trashcan with temporary negative ID
+        Trashcan trashcan = new Trashcan(nextTempId--, name, location, status,
+                new Timestamp(System.currentTimeMillis()));
+        inMemoryTrashcans.add(trashcan);
+        hasUnsavedChanges = true;
+        System.out.println(
+                "✓ Trashcan added to memory (ID: " + trashcan.getId() + "). Use option 6 to save to database.");
+    }
+
+    private static void updateTrashcan() {
+        if (!checkConnection())
+            return;
+
+        System.out.println("\n--- Update Trashcan (In-Memory) ---");
+
+        System.out.print("Enter trashcan ID to update: ");
+        String idInput = scanner.nextLine().trim();
+
+        int id;
+        try {
+            id = Integer.parseInt(idInput);
+        } catch (NumberFormatException e) {
+            System.out.println("✗ Error: Invalid ID format. Please enter a number.");
+            return;
+        }
+
+        // Find trashcan in memory
+        Trashcan existingTrashcan = null;
+        int index = -1;
+        for (int i = 0; i < inMemoryTrashcans.size(); i++) {
+            if (inMemoryTrashcans.get(i).getId() == id) {
+                existingTrashcan = inMemoryTrashcans.get(i);
+                index = i;
+                break;
+            }
+        }
+
+        if (existingTrashcan == null) {
+            System.out.println("✗ Error: No trashcan found with ID: " + id);
+            return;
+        }
+
+        System.out.println("\nCurrent trashcan details:");
+        System.out.println("  Name: " + existingTrashcan.getName());
+        System.out.println(
+                "  Location: " + (existingTrashcan.getLocation() != null ? existingTrashcan.getLocation() : "N/A"));
+        System.out.println("  Status: " + existingTrashcan.getStatus());
+        System.out.println("\nEnter new values (press Enter to keep current value):");
+
+        System.out.print("Enter new name [" + existingTrashcan.getName() + "]: ");
+        String name = scanner.nextLine().trim();
+        if (name.isEmpty()) {
+            name = existingTrashcan.getName();
+        }
+
+        System.out.print("Enter new location ["
+                + (existingTrashcan.getLocation() != null ? existingTrashcan.getLocation() : "N/A") + "]: ");
+        String location = scanner.nextLine().trim();
+        if (location.isEmpty()) {
+            location = existingTrashcan.getLocation();
+        }
+
+        System.out.print("Enter new status (empty/half/full) [" + existingTrashcan.getStatus() + "]: ");
+        String status = scanner.nextLine().trim().toLowerCase();
+        if (status.isEmpty()) {
+            status = existingTrashcan.getStatus();
+        } else if (!status.equals("empty") && !status.equals("half") && !status.equals("full")) {
+            System.out.println("✗ Error: Status must be 'empty', 'half', or 'full'.");
+            return;
+        }
+
+        // Update in memory
+        Trashcan updatedTrashcan = new Trashcan(id, name, location, status, new Timestamp(System.currentTimeMillis()));
+        inMemoryTrashcans.set(index, updatedTrashcan);
+        hasUnsavedChanges = true;
+        System.out.println("✓ Trashcan updated in memory. Use option 6 to save to database.");
+    }
+
+    private static void deleteTrashcan() {
+        if (!checkConnection())
+            return;
+
+        System.out.println("\n--- Delete Trashcan (In-Memory) ---");
+
+        System.out.print("Enter trashcan ID to delete: ");
+        String idInput = scanner.nextLine().trim();
+
+        int id;
+        try {
+            id = Integer.parseInt(idInput);
+        } catch (NumberFormatException e) {
+            System.out.println("✗ Error: Invalid ID format. Please enter a number.");
+            return;
+        }
+
+        // Find trashcan in memory
+        Trashcan trashcanToDelete = null;
+        for (Trashcan t : inMemoryTrashcans) {
+            if (t.getId() == id) {
+                trashcanToDelete = t;
+                break;
+            }
+        }
+
+        if (trashcanToDelete == null) {
+            System.out.println("✗ Error: No trashcan found with ID: " + id);
+            return;
+        }
+
+        // Confirm deletion
+        System.out.print("Are you sure you want to delete trashcan with ID " + id + " (" + trashcanToDelete.getName()
+                + ")? (yes/no): ");
+        String confirmation = scanner.nextLine().trim().toLowerCase();
+
+        if (confirmation.equals("yes") || confirmation.equals("y")) {
+            inMemoryTrashcans.remove(trashcanToDelete);
+            hasUnsavedChanges = true;
+            System.out.println("✓ Trashcan removed from memory. Use option 6 to save changes to database.");
+        } else {
+            System.out.println("Deletion cancelled.");
+        }
+    }
+
+    private static void saveTrashcansToDatabase() {
+        if (!checkConnection())
+            return;
+
+        System.out.println("\n--- Save Changes to Database ---");
+
+        if (!hasUnsavedChanges) {
+            System.out.println("✓ No unsaved changes. Everything is up to date.");
+            return;
+        }
+
+        // Find items to insert (negative IDs)
+        List<Trashcan> toInsert = new ArrayList<>();
+        // Find items to update (positive IDs that exist in both lists but changed)
+        List<Trashcan> toUpdate = new ArrayList<>();
+        // Find items to delete (in original but not in memory)
+        List<Integer> toDelete = new ArrayList<>();
+
+        // Identify new items (negative IDs)
+        for (Trashcan t : inMemoryTrashcans) {
+            if (t.getId() < 0) {
+                toInsert.add(t);
+            }
+        }
+
+        // Identify items to update or delete
+        for (Trashcan original : originalTrashcans) {
+            boolean found = false;
+            for (Trashcan current : inMemoryTrashcans) {
+                if (current.getId() == original.getId()) {
+                    found = true;
+                    // Check if it changed (handle null locations)
+                    String origLocation = original.getLocation() != null ? original.getLocation() : "";
+                    String currLocation = current.getLocation() != null ? current.getLocation() : "";
+
+                    if (!original.getName().equals(current.getName()) ||
+                            !origLocation.equals(currLocation) ||
+                            !original.getStatus().equals(current.getStatus())) {
+                        toUpdate.add(current);
+                    }
+                    break;
+                }
+            }
+            if (!found) {
+                toDelete.add(original.getId());
+            }
+        }
+
+        // Execute operations
+        int totalOperations = 0;
+
+        // Insert new items
+        for (Trashcan t : toInsert) {
+            Trashcan newTrashcan = new Trashcan(t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
+            trashcanService.addTrashcan(newTrashcan);
+            totalOperations++;
+        }
+
+        // Update existing items
+        for (Trashcan t : toUpdate) {
+            trashcanService.updateTrashcan(t);
+            totalOperations++;
+        }
+
+        // Delete removed items
+        for (Integer id : toDelete) {
+            trashcanService.deleteTrashcan(id);
+            totalOperations++;
+        }
+
+        if (totalOperations > 0) {
+            System.out.println("✓ Successfully saved " + totalOperations + " change(s) to database:");
+            if (!toInsert.isEmpty())
+                System.out.println("  - Inserted: " + toInsert.size() + " trashcan(s)");
+            if (!toUpdate.isEmpty())
+                System.out.println("  - Updated: " + toUpdate.size() + " trashcan(s)");
+            if (!toDelete.isEmpty())
+                System.out.println("  - Deleted: " + toDelete.size() + " trashcan(s)");
+        } else {
+            System.out.println("No changes to save.");
+        }
+
+        // Reload from database to sync (get new IDs for inserted items)
+        loadTrashcansFromDatabase();
+        hasUnsavedChanges = false;
+        System.out.println("✓ In-memory list synchronized with database.");
+    }
+
+    /**
+     * Loads trashcans from database into memory and creates a snapshot.
+     */
+    private static void loadTrashcansFromDatabase() {
+        inMemoryTrashcans.clear();
+        originalTrashcans.clear();
+
+        List<Trashcan> dbTrashcans = trashcanService.getAllTrashcans();
+
+        // Create deep copies for both lists
+        for (Trashcan t : dbTrashcans) {
+            Trashcan copy1 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
+            Trashcan copy2 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
+            inMemoryTrashcans.add(copy1);
+            originalTrashcans.add(copy2);
+        }
+
+        hasUnsavedChanges = false;
+        nextTempId = -1; // Reset temp ID counter
+    }
+
     private static boolean checkConnection() {
-        if (connection == null) {
-            System.out.println("Not connected to any database. Please connect first.");
+        if (!dbManager.isConnected()) {
+            System.out.println("✗ Error: Not connected to any database. Please connect first (Option 1).");
             return false;
         }
         return true;
     }
 
     private static void disconnectDatabase() {
-        if (connection != null) {
-            try {
-                connection.close();
-                System.out.println("Database connection closed.");
-            } catch (SQLException e) {
-                System.out.println("Error closing connection: " + e.getMessage());
+        dbManager.disconnect();
+    }
+
+    /**
+     * Clears the console screen.
+     * Uses ANSI escape codes for cross-platform support.
+     */
+    private static void clearScreen() {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+
+            if (os.contains("win")) {
+                // Windows
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                // Unix/Linux/Mac
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (IOException | InterruptedException e) {
+            // Fallback: print multiple newlines if clearing fails
+            for (int i = 0; i < 50; i++) {
+                System.out.println();
             }
         }
     }
 
-    private static void viewTrashcans() {
-        if (!checkConnection()) return;
-
-        // TODO: Replace this with actual DB query using TrashcanService
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
-        System.out.println("| ID | Name              | Location             | Status| Last Updated        |");
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
-        System.out.println("| 1  | NW1-F1-Entrance   | NW1 floor 1, entrance| empty | 2025-11-07 12:00    |");
-        System.out.println("| 2  | NE2-F2-Labs       | NE2 floor 2, labs    | half  | 2025-11-07 12:05    |");
-        System.out.println("| 3  | SW3-F1-Cafeteria | SW3 floor 1, cafeteria| full | 2025-11-07 12:10   |");
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
+    /**
+     * Waits for user to press Enter before continuing.
+     */
+    private static void waitForEnter() {
+        System.out.print("\nPress Enter to continue...");
+        scanner.nextLine();
     }
 }
