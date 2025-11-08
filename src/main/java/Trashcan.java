@@ -4,7 +4,7 @@ public class Trashcan {
     private int id;
     private String name;
     private String location;
-    private String status;
+    private int status; // Percentage (0-100)
     private Timestamp lastUpdated;
 
     // Default constructor
@@ -12,7 +12,7 @@ public class Trashcan {
     }
 
     // Constructor without id (for creating new trashcans)
-    public Trashcan(String name, String location, String status, Timestamp lastUpdated) {
+    public Trashcan(String name, String location, int status, Timestamp lastUpdated) {
         this.name = name;
         this.location = location;
         this.status = status;
@@ -20,7 +20,7 @@ public class Trashcan {
     }
 
     // Full constructor
-    public Trashcan(int id, String name, String location, String status, Timestamp lastUpdated) {
+    public Trashcan(int id, String name, String location, int status, Timestamp lastUpdated) {
         this.id = id;
         this.name = name;
         this.location = location;
@@ -41,7 +41,7 @@ public class Trashcan {
         return location;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
@@ -62,7 +62,7 @@ public class Trashcan {
         this.location = location;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 
@@ -88,19 +88,18 @@ public class Trashcan {
         // Truncate strings to fit table columns if needed (with smart truncation)
         int nameWidth = 45;
         int locationWidth = 40;
-        int statusWidth = 8;
 
         String truncatedName = truncateString(name != null ? name : "N/A", nameWidth);
         String truncatedLocation = truncateString(location != null ? location : "N/A", locationWidth);
-        String truncatedStatus = truncateString(status != null ? status : "N/A", statusWidth);
+        String statusDisplay = String.format("%d%%", status);
 
-        // Format to match table: | ID (5) | Name (45) | Location (40) | Status (8) |
-        // Last Updated (20) |
-        return String.format("| %-5d| %-45s| %-40s| %-8s| %-20s|",
+        // Format to match table: | ID (4) | Name (44) | Location (39) | Status (8) |
+        // Last Updated (19) |
+        return String.format("| %-4d| %-44s| %-40s| %-8s| %-19s|",
                 id,
                 truncatedName,
                 truncatedLocation,
-                truncatedStatus,
+                statusDisplay,
                 formattedTimestamp);
     }
 
@@ -159,7 +158,7 @@ public class Trashcan {
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Location:",
                 location != null ? location : "N/A"));
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Status:",
-                status != null ? status : "N/A"));
+                String.format("%d%%", status)));
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Last Updated:",
                 formattedTimestamp));
         sb.append("╚════════════════════════════════════════════════════════════════╝");

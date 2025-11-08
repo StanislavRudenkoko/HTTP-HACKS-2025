@@ -244,10 +244,17 @@ public class Main {
         String location = scanner.nextLine().trim();
         // Location can be empty/null
 
-        System.out.print("Enter status (empty/half/full): ");
-        String status = scanner.nextLine().trim().toLowerCase();
-        if (!status.equals("empty") && !status.equals("half") && !status.equals("full")) {
-            System.out.println("[ERROR] Error: Status must be 'empty', 'half', or 'full'.");
+        System.out.print("Enter status (0-100, percentage): ");
+        String statusInput = scanner.nextLine().trim();
+        int status;
+        try {
+            status = Integer.parseInt(statusInput);
+            if (status < 0 || status > 100) {
+                System.out.println("[ERROR] Error: Status must be between 0 and 100 (percentage).");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("[ERROR] Error: Status must be a valid integer between 0 and 100.");
             return;
         }
 
@@ -297,7 +304,7 @@ public class Main {
         System.out.println("  Name: " + existingTrashcan.getName());
         System.out.println(
                 "  Location: " + (existingTrashcan.getLocation() != null ? existingTrashcan.getLocation() : "N/A"));
-        System.out.println("  Status: " + existingTrashcan.getStatus());
+        System.out.println("  Status: " + existingTrashcan.getStatus() + "%");
         System.out.println("\nEnter new values (press Enter to keep current value):");
 
         System.out.print("Enter new name [" + existingTrashcan.getName() + "]: ");
@@ -313,13 +320,22 @@ public class Main {
             location = existingTrashcan.getLocation();
         }
 
-        System.out.print("Enter new status (empty/half/full) [" + existingTrashcan.getStatus() + "]: ");
-        String status = scanner.nextLine().trim().toLowerCase();
-        if (status.isEmpty()) {
+        System.out.print("Enter new status (0-100, percentage) [" + existingTrashcan.getStatus() + "%]: ");
+        String statusInput = scanner.nextLine().trim();
+        int status;
+        if (statusInput.isEmpty()) {
             status = existingTrashcan.getStatus();
-        } else if (!status.equals("empty") && !status.equals("half") && !status.equals("full")) {
-            System.out.println("[ERROR] Error: Status must be 'empty', 'half', or 'full'.");
-            return;
+        } else {
+            try {
+                status = Integer.parseInt(statusInput);
+                if (status < 0 || status > 100) {
+                    System.out.println("[ERROR] Error: Status must be between 0 and 100 (percentage).");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("[ERROR] Error: Status must be a valid integer between 0 and 100.");
+                return;
+            }
         }
 
         // Update in memory
@@ -411,7 +427,7 @@ public class Main {
 
                     if (!original.getName().equals(current.getName()) ||
                             !origLocation.equals(currLocation) ||
-                            !original.getStatus().equals(current.getStatus())) {
+                            original.getStatus() != current.getStatus()) {
                         toUpdate.add(current);
                     }
                     break;
