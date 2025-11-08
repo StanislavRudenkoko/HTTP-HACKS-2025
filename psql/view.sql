@@ -1,8 +1,3 @@
--- =====================================================
--- View: smart_trashcan.trashcan_overview
--- Shows all trashcans with routing-friendly info
--- =====================================================
-
 CREATE OR REPLACE VIEW smart_trashcan.trashcan_overview AS
 SELECT
     id,
@@ -14,15 +9,15 @@ SELECT
     longitude,
     status,
     route_priority,
-    last_updated
-FROM
-    smart_trashcan.trashcans
+    last_updated,
+    CASE
+        WHEN status::INT >= 75 THEN 'full'
+        WHEN status::INT >= 40 THEN 'half'
+        ELSE 'empty'
+    END AS status_text
+FROM smart_trashcan.trashcans
 ORDER BY
-    CASE status
-        WHEN 'full' THEN 1
-        WHEN 'half' THEN 2
-        ELSE 3
-    END,
+    status::INT DESC,  -- fullest first
     route_priority DESC,
     building,
     floor;

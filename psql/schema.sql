@@ -20,8 +20,8 @@ CREATE TABLE smart_trashcan.trashcans (
     latitude DECIMAL(9,6),
     longitude DECIMAL(9,6),
 
-    -- Trashcan fill status
-    status TEXT CHECK (status IN ('empty', 'half', 'full')) DEFAULT 'empty',
+    -- Fill level as percentage (0 to 100)
+    status INT CHECK (status >= 0 AND status <= 100) DEFAULT 0,
 
     -- Optional routing priority (for route optimization)
     route_priority INT DEFAULT 0,
