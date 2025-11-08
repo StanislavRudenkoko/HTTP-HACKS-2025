@@ -12,7 +12,8 @@ public class TrashcanService {
     /**
      * Fetches all trashcans from the database.
      * 
-     * @return List of all Trashcan objects, empty list if none found or error occurs
+     * @return List of all Trashcan objects, empty list if none found or error
+     *         occurs
      */
     public List<Trashcan> getAllTrashcans() {
         List<Trashcan> trashcans = new ArrayList<>();
@@ -26,16 +27,15 @@ public class TrashcanService {
         String sql = "SELECT id, name, location, status, last_updated FROM trashcans ORDER BY id";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+                ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 Trashcan trashcan = new Trashcan(
-                    rs.getInt("id"),
-                    rs.getString("name"),
-                    rs.getString("location"),
-                    rs.getString("status"),
-                    rs.getTimestamp("last_updated")
-                );
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("location"),
+                        rs.getInt("status"),
+                        rs.getTimestamp("last_updated"));
                 trashcans.add(trashcan);
             }
 
@@ -77,8 +77,8 @@ public class TrashcanService {
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, trashcan.getName());
             pstmt.setString(2, trashcan.getLocation());
-            pstmt.setString(3, trashcan.getStatus());
-            
+            pstmt.setInt(3, trashcan.getStatus());
+
             // Use provided timestamp or current timestamp
             if (trashcan.getLastUpdated() != null) {
                 pstmt.setTimestamp(4, trashcan.getLastUpdated());
@@ -105,10 +105,10 @@ public class TrashcanService {
             System.err.println("[ERROR] Error adding trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
-            
+
             // Provide specific error messages
             if (e.getMessage().contains("violates check constraint")) {
-                System.err.println("  Hint: Status must be one of: 'empty', 'half', 'full'");
+                System.err.println("  Hint: Status must be an integer between 0 and 100 (percentage)");
             } else if (e.getMessage().contains("null value")) {
                 System.err.println("  Hint: Name is required and cannot be null");
             }
@@ -117,9 +117,11 @@ public class TrashcanService {
 
     /**
      * Updates an existing trashcan in the database.
-     * Updates name, location, and status. The last_updated timestamp is automatically updated.
+     * Updates name, location, and status. The last_updated timestamp is
+     * automatically updated.
      * 
-     * @param trashcan The Trashcan object with updated values (must have a valid id)
+     * @param trashcan The Trashcan object with updated values (must have a valid
+     *                 id)
      */
     public void updateTrashcan(Trashcan trashcan) {
         if (trashcan == null) {
@@ -143,7 +145,7 @@ public class TrashcanService {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, trashcan.getName());
             pstmt.setString(2, trashcan.getLocation());
-            pstmt.setString(3, trashcan.getStatus());
+            pstmt.setInt(3, trashcan.getStatus());
             pstmt.setInt(4, trashcan.getId());
 
             int rowsAffected = pstmt.executeUpdate();
@@ -158,9 +160,9 @@ public class TrashcanService {
             System.err.println("[ERROR] Error updating trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
-            
+
             if (e.getMessage().contains("violates check constraint")) {
-                System.err.println("  Hint: Status must be one of: 'empty', 'half', 'full'");
+                System.err.println("  Hint: Status must be an integer between 0 and 100 (percentage)");
             }
         }
     }
@@ -199,9 +201,10 @@ public class TrashcanService {
             System.err.println("[ERROR] Error deleting trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
-            
+
             if (e.getMessage().contains("violates foreign key constraint")) {
-                System.err.println("  Hint: Cannot delete trashcan. There are subscriptions referencing this trashcan.");
+                System.err
+                        .println("  Hint: Cannot delete trashcan. There are subscriptions referencing this trashcan.");
             }
         }
     }
@@ -237,14 +240,15 @@ public class TrashcanService {
 
                 // Skip trashcans that already have an ID (they're already in DB)
                 if (trashcan.getId() > 0) {
-                    System.out.println("Skipping trashcan with ID " + trashcan.getId() + " (already exists in database).");
+                    System.out.println(
+                            "Skipping trashcan with ID " + trashcan.getId() + " (already exists in database).");
                     continue;
                 }
 
                 pstmt.setString(1, trashcan.getName());
                 pstmt.setString(2, trashcan.getLocation());
-                pstmt.setString(3, trashcan.getStatus());
-                
+                pstmt.setInt(3, trashcan.getStatus());
+
                 if (trashcan.getLastUpdated() != null) {
                     pstmt.setTimestamp(4, trashcan.getLastUpdated());
                 } else {
@@ -258,7 +262,8 @@ public class TrashcanService {
                 if (batchCount % 100 == 0) {
                     int[] results = pstmt.executeBatch();
                     for (int result : results) {
-                        if (result > 0) savedCount++;
+                        if (result > 0)
+                            savedCount++;
                     }
                     pstmt.clearBatch();
                 }
@@ -268,11 +273,13 @@ public class TrashcanService {
             if (batchCount % 100 != 0) {
                 int[] results = pstmt.executeBatch();
                 for (int result : results) {
-                    if (result > 0) savedCount++;
+                    if (result > 0)
+                        savedCount++;
                 }
             }
 
-            System.out.println("[OK] Successfully saved " + savedCount + " out of " + trashcans.size() + " trashcan(s) to database.");
+            System.out.println("[OK] Successfully saved " + savedCount + " out of " + trashcans.size()
+                    + " trashcan(s) to database.");
 
         } catch (SQLException e) {
             System.err.println("[ERROR] Error saving trashcans: " + e.getMessage());
@@ -293,9 +300,12 @@ public class TrashcanService {
         }
 
         // Print table header with wider columns
-        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
-        System.out.println("| ID  | Name                                         | Location                                | Status   | Last Updated         |");
-        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
+        System.out.println(
+                "+-----+---------------------------------------------+-----------------------------------------+---------+--------------------+");
+        System.out.println(
+                "| ID  | Name                                        | Location                                | Status  | Last Updated       |");
+        System.out.println(
+                "+-----+---------------------------------------------+-----------------------------------------+---------+--------------------+");
 
         // Print each trashcan
         for (Trashcan trashcan : trashcans) {
@@ -303,10 +313,11 @@ public class TrashcanService {
         }
 
         // Print table footer
-        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
+        System.out.println(
+                "+-----+---------------------------------------------+-----------------------------------------+---------+--------------------+");
         System.out.println("Total: " + trashcans.size() + " trashcan(s)");
     }
-    
+
     /**
      * Displays a single trashcan in detail without truncation.
      * 
@@ -317,8 +328,7 @@ public class TrashcanService {
             System.out.println("[ERROR] Error: Cannot display null trashcan.");
             return;
         }
-        
+
         System.out.println(trashcan.toDetailedString());
     }
 }
-
