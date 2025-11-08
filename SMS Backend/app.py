@@ -27,13 +27,12 @@ DELETE ALL - Unsubscribe from all bins
 DELETE {BIN_ID} - Unsubscribe from a bin
 """
 
-print(subscriptions_help_message)
-
 account_sid = os.environ["TWILIO_ACCOUNT_SID"]
 auth_token = os.environ["TWILIO_AUTH_TOKEN"]
 
 client = Client(account_sid, auth_token)
 app = Flask(__name__)
+
 
 db = psycopg.connect(
     host =       os.environ["SQL_HOST"],
@@ -88,26 +87,27 @@ def sms_reply() -> str:
                 resp.message(subscriptions_help_message)
                 return str(resp)
             
-            phone_num = request.values.get("From", None)
+            phone = request.values.get("From", None)
             match body[1]:
                 # Show all subscriptions
                 case "show":
-                    cur.execute(f"SELECT id, name, status FROM subscription JOIN trashcans ON subscriptions.phone_num='{phone_num}';")
+                    cur.execute(f"SELECT trashcan_id, name, status FROM subscriptions JOIN trashcans ON subscriptions.phone='{phone}';")
                     send_sql(resp)
                     
                 case "add":
-                    argument = re.escape(body[3])
+                    argument = int(body[3])
                     match body[2]:
                         # Add a bin by ID
                         case "id":
-                            cur.execute(f"INSERT INTO subscription(id, phone_num) VALUES ({argument}, {phone_num});")
+                            cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({argument}, {phone});")
+                            resp.message(f"Subscription for trashcan {argument} added successfully.")
                         # Add all bins in a building
                         case "building":
                             subscriptions_added = 0
                             cur.execute(f"SELECT id FROM trashcans WHERE LOWER(location) LIKE '%{argument}%';")
                             trashcans = cur.fetchall()
                             for trashcan in trashcans:
-                                cur.execute(f"INSERT INTO subscription(id, phone_num) VALUES ({trashcan[0]}, '{phone_num})';")
+                                cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({trashcan[0]}, '{phone})';")
                                 subscriptions_added += 1
                                 
                             resp.message(f"{subscriptions_added} subscriptions for building {argument} added successfully.")
@@ -116,10 +116,10 @@ def sms_reply() -> str:
                     match body[2]:
                         # Remove subscription from all bins
                         case "all":
-                            cur.execute(f"DELETE FROM subscription WHERE phone_num='{phone_num}';")
+                            cur.execute(f"DELETE FROM subscriptions WHERE phone='{phone}';")
                         # Remove subscription from a specific bin
                         case _:
-                            cur.execute(f"DELETE FROM subscription WHERE phone_num='{phone_num}' AND id={re.escape(body[2])}")
+                            cur.execute(f"DELETE FROM subscriptions WHERE phone='{phone}' AND trashcan_id={re.escape(body[2])}")
                             
         # Unrecognized message
         case _:
@@ -131,22 +131,25 @@ def sms_reply() -> str:
 @app.route("/data", methods={"GET", "POST"})
 def data_fetch() -> str:
     body = request.get_json()
+    print(body)
     
     id = int(body['id'])
     status = int(body['status'])
+    
+    print(f"{id}, {status}")
     
     cur.execute(f"UPDATE trashcans SET status={status}, last_updated=NOW() WHERE id={id};")
     
     if status >= 90:
         cur.execute(f"SELECT location FROM trashcans WHERE id={id};")
         trashcan = cur.fetchone()[0]
-        cur.execute(f"SELECT phone_num FROM subscription WHERE id={id};")
-        phone_nums = cur.fetchall()
-        for phone_num in phone_nums:
+        cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={id};")
+        phones = cur.fetchall()
+        for phone in phones:
             client.messages.create(
                 body=f"Trashcan {trashcan} is full!",
                 from_="+19302033111",
-                to=phone_num[0].replace("\\", "")
+                to=phone[0].replace("\\", "")
             )
     
     return "Data was succesfully stored."
