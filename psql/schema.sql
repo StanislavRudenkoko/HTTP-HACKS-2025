@@ -34,9 +34,9 @@ CREATE TABLE smart_trashcan.trashcans (
 --  Subscriptions Table
 -- ===========================
 CREATE TABLE smart_trashcan.subscriptions (
-    id SERIAL PRIMARY KEY,
     trashcan_id INT REFERENCES smart_trashcan.trashcans(id) ON DELETE CASCADE,
-    phone TEXT NOT NULL
+    phone TEXT NOT NULL,
+	PRIMARY KEY (trashcan_id, phone)
 );
 
 -- ===========================
