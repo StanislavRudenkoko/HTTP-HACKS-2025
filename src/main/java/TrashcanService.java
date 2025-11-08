@@ -19,7 +19,7 @@ public class TrashcanService {
         Connection conn = dbManager.getConnection();
 
         if (conn == null) {
-            System.err.println("✗ Error: No database connection available.");
+            System.err.println("[ERROR] Error: No database connection available.");
             return trashcans;
         }
 
@@ -42,11 +42,11 @@ public class TrashcanService {
             if (trashcans.isEmpty()) {
                 System.out.println("No trashcans found in database.");
             } else {
-                System.out.println("✓ Retrieved " + trashcans.size() + " trashcan(s) from database.");
+                System.out.println("[OK] Retrieved " + trashcans.size() + " trashcan(s) from database.");
             }
 
         } catch (SQLException e) {
-            System.err.println("✗ Error fetching trashcans: " + e.getMessage());
+            System.err.println("[ERROR] Error fetching trashcans: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
         }
@@ -62,13 +62,13 @@ public class TrashcanService {
      */
     public void addTrashcan(Trashcan trashcan) {
         if (trashcan == null) {
-            System.err.println("✗ Error: Cannot add null trashcan.");
+            System.err.println("[ERROR] Error: Cannot add null trashcan.");
             return;
         }
 
         Connection conn = dbManager.getConnection();
         if (conn == null) {
-            System.err.println("✗ Error: No database connection available.");
+            System.err.println("[ERROR] Error: No database connection available.");
             return;
         }
 
@@ -94,15 +94,15 @@ public class TrashcanService {
                     if (generatedKeys.next()) {
                         int newId = generatedKeys.getInt(1);
                         trashcan.setId(newId);
-                        System.out.println("✓ Successfully added trashcan with ID: " + newId);
+                        System.out.println("[OK] Successfully added trashcan with ID: " + newId);
                     }
                 }
             } else {
-                System.err.println("✗ Error: No rows were inserted.");
+                System.err.println("[ERROR] Error: No rows were inserted.");
             }
 
         } catch (SQLException e) {
-            System.err.println("✗ Error adding trashcan: " + e.getMessage());
+            System.err.println("[ERROR] Error adding trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
             
@@ -123,18 +123,18 @@ public class TrashcanService {
      */
     public void updateTrashcan(Trashcan trashcan) {
         if (trashcan == null) {
-            System.err.println("✗ Error: Cannot update null trashcan.");
+            System.err.println("[ERROR] Error: Cannot update null trashcan.");
             return;
         }
 
         if (trashcan.getId() <= 0) {
-            System.err.println("✗ Error: Invalid trashcan ID. Cannot update trashcan without a valid ID.");
+            System.err.println("[ERROR] Error: Invalid trashcan ID. Cannot update trashcan without a valid ID.");
             return;
         }
 
         Connection conn = dbManager.getConnection();
         if (conn == null) {
-            System.err.println("✗ Error: No database connection available.");
+            System.err.println("[ERROR] Error: No database connection available.");
             return;
         }
 
@@ -149,13 +149,13 @@ public class TrashcanService {
             int rowsAffected = pstmt.executeUpdate();
 
             if (rowsAffected > 0) {
-                System.out.println("✓ Successfully updated trashcan with ID: " + trashcan.getId());
+                System.out.println("[OK] Successfully updated trashcan with ID: " + trashcan.getId());
             } else {
-                System.err.println("✗ Error: No trashcan found with ID: " + trashcan.getId());
+                System.err.println("[ERROR] Error: No trashcan found with ID: " + trashcan.getId());
             }
 
         } catch (SQLException e) {
-            System.err.println("✗ Error updating trashcan: " + e.getMessage());
+            System.err.println("[ERROR] Error updating trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
             
@@ -172,13 +172,13 @@ public class TrashcanService {
      */
     public void deleteTrashcan(int id) {
         if (id <= 0) {
-            System.err.println("✗ Error: Invalid trashcan ID. ID must be greater than 0.");
+            System.err.println("[ERROR] Error: Invalid trashcan ID. ID must be greater than 0.");
             return;
         }
 
         Connection conn = dbManager.getConnection();
         if (conn == null) {
-            System.err.println("✗ Error: No database connection available.");
+            System.err.println("[ERROR] Error: No database connection available.");
             return;
         }
 
@@ -190,13 +190,13 @@ public class TrashcanService {
             int rowsAffected = pstmt.executeUpdate();
 
             if (rowsAffected > 0) {
-                System.out.println("✓ Successfully deleted trashcan with ID: " + id);
+                System.out.println("[OK] Successfully deleted trashcan with ID: " + id);
             } else {
-                System.err.println("✗ Error: No trashcan found with ID: " + id);
+                System.err.println("[ERROR] Error: No trashcan found with ID: " + id);
             }
 
         } catch (SQLException e) {
-            System.err.println("✗ Error deleting trashcan: " + e.getMessage());
+            System.err.println("[ERROR] Error deleting trashcan: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
             
@@ -220,7 +220,7 @@ public class TrashcanService {
 
         Connection conn = dbManager.getConnection();
         if (conn == null) {
-            System.err.println("✗ Error: No database connection available.");
+            System.err.println("[ERROR] Error: No database connection available.");
             return;
         }
 
@@ -272,17 +272,17 @@ public class TrashcanService {
                 }
             }
 
-            System.out.println("✓ Successfully saved " + savedCount + " out of " + trashcans.size() + " trashcan(s) to database.");
+            System.out.println("[OK] Successfully saved " + savedCount + " out of " + trashcans.size() + " trashcan(s) to database.");
 
         } catch (SQLException e) {
-            System.err.println("✗ Error saving trashcans: " + e.getMessage());
+            System.err.println("[ERROR] Error saving trashcans: " + e.getMessage());
             System.err.println("  SQL State: " + e.getSQLState());
             System.err.println("  Error Code: " + e.getErrorCode());
         }
     }
 
     /**
-     * Displays all trashcans in a formatted table.
+     * Displays all trashcans in a formatted table with wider columns.
      * 
      * @param trashcans List of Trashcan objects to display
      */
@@ -292,10 +292,10 @@ public class TrashcanService {
             return;
         }
 
-        // Print table header
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
-        System.out.println("| ID | Name              | Location             | Status| Last Updated        |");
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
+        // Print table header with wider columns
+        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
+        System.out.println("| ID  | Name                                         | Location                                | Status   | Last Updated         |");
+        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
 
         // Print each trashcan
         for (Trashcan trashcan : trashcans) {
@@ -303,8 +303,22 @@ public class TrashcanService {
         }
 
         // Print table footer
-        System.out.println("+----+-------------------+----------------------+-------+---------------------+");
+        System.out.println("+-----+---------------------------------------------+----------------------------------------+----------+---------------------+");
         System.out.println("Total: " + trashcans.size() + " trashcan(s)");
+    }
+    
+    /**
+     * Displays a single trashcan in detail without truncation.
+     * 
+     * @param trashcan The Trashcan object to display
+     */
+    public void displayTrashcanDetail(Trashcan trashcan) {
+        if (trashcan == null) {
+            System.out.println("[ERROR] Error: Cannot display null trashcan.");
+            return;
+        }
+        
+        System.out.println(trashcan.toDetailedString());
     }
 }
 

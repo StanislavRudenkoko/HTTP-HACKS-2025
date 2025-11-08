@@ -85,24 +85,70 @@ public class Trashcan {
             }
         }
 
-        // Truncate strings to fit table columns if needed
-        String truncatedName = name != null && name.length() > 19 
-            ? name.substring(0, 16) + "..." 
-            : (name != null ? name : "N/A");
-        String truncatedLocation = location != null && location.length() > 22 
-            ? location.substring(0, 19) + "..." 
-            : (location != null ? location : "N/A");
-        String truncatedStatus = status != null && status.length() > 5 
-            ? status.substring(0, 5) 
-            : (status != null ? status : "N/A");
+        // Truncate strings to fit table columns if needed (with smart truncation)
+        int nameWidth = 45;
+        int locationWidth = 40;
+        int statusWidth = 8;
+        
+        String truncatedName = truncateString(name != null ? name : "N/A", nameWidth);
+        String truncatedLocation = truncateString(location != null ? location : "N/A", locationWidth);
+        String truncatedStatus = truncateString(status != null ? status : "N/A", statusWidth);
 
-        // Format to match table: | ID | Name (19) | Location (22) | Status (5) | Last Updated (21) |
-        return String.format("| %-3d| %-19s| %-22s| %-5s| %-21s|",
+        // Format to match table: | ID (5) | Name (45) | Location (40) | Status (8) | Last Updated (20) |
+        return String.format("| %-5d| %-45s| %-40s| %-8s| %-20s|",
             id,
             truncatedName,
             truncatedLocation,
             truncatedStatus,
             formattedTimestamp);
+    }
+    
+    /**
+     * Truncates a string to fit within the specified width, adding "..." if truncated.
+     * 
+     * @param str The string to truncate
+     * @param width The maximum width
+     * @return The truncated string
+     */
+    private String truncateString(String str, int width) {
+        if (str == null) {
+            return "N/A";
+        }
+        if (str.length() <= width) {
+            return str;
+        }
+        // Truncate and add ellipsis
+        return str.substring(0, width - 3) + "...";
+    }
+    
+    /**
+     * Returns a detailed string representation of the trashcan without truncation.
+     * 
+     * @return Detailed string representation
+     */
+    public String toDetailedString() {
+        String formattedTimestamp = "N/A";
+        if (lastUpdated != null) {
+            String timestampStr = lastUpdated.toString();
+            if (timestampStr.length() >= 19) {
+                formattedTimestamp = timestampStr.substring(0, 19);
+            } else {
+                formattedTimestamp = timestampStr;
+            }
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("╔════════════════════════════════════════════════════════════════╗\n");
+        sb.append("║                    TRASHCAN DETAILS                            ║\n");
+        sb.append("╠════════════════════════════════════════════════════════════════╣\n");
+        sb.append(String.format("║ ID:            %-45d║\n", id));
+        sb.append(String.format("║ Name:          %-45s║\n", name != null ? name : "N/A"));
+        sb.append(String.format("║ Location:      %-45s║\n", location != null ? location : "N/A"));
+        sb.append(String.format("║ Status:        %-45s║\n", status != null ? status : "N/A"));
+        sb.append(String.format("║ Last Updated:   %-45s║\n", formattedTimestamp));
+        sb.append("╚════════════════════════════════════════════════════════════════╝");
+        
+        return sb.toString();
     }
 }
 
