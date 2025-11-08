@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // ✅ Testing
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    // ✅ PostgreSQL Database Driver
+    implementation 'org.postgresql:postgresql:42.7.3'
+
+    // ✅ Lanterna for Terminal UI
+    implementation 'com.googlecode.lanterna:lanterna:3.1.1'
+
+    // ✅ Twilio for SMS notifications
+    implementation 'com.twilio.sdk:twilio:9.14.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    // ✅ Main class of your app (update if your main file has a different package)
+    mainClass = 'org.example.Main'
+}
