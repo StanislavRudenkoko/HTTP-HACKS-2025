@@ -119,7 +119,7 @@ When janitors empty a bin, they must reset it so the system knows it’s empty.
 2. **Press it once**, wait for a click.
 3. **Press it again**, wait for another click.
 4. The **red LED** will flash to confirm the reset.
-5. Wait about **20 seconds**, then text:
+5. Wait about **40 seconds**, then text:
    The reply should say the bin is **empty (0)**.
 
 ---
