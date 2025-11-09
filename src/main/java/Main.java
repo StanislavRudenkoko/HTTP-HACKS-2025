@@ -175,15 +175,20 @@ public class Main {
         if (!checkConnection())
             return;
 
-        System.out.println("\n--- View All Trashcans (In-Memory) ---");
-        if (inMemoryTrashcans.isEmpty()) {
-            System.out.println("No trashcans in memory.");
+        System.out.println("\n--- View All Trashcans (From Database) ---");
+
+        // Fetch fresh data from database
+        List<Trashcan> freshTrashcans = trashcanService.getAllTrashcans();
+
+        if (freshTrashcans.isEmpty()) {
+            System.out.println("No trashcans found in database.");
             return;
         }
 
-        trashcanService.displayTrashcans(inMemoryTrashcans);
+        trashcanService.displayTrashcans(freshTrashcans);
         if (hasUnsavedChanges) {
-            System.out.println("\n[WARNING] Note: You have unsaved changes. Use option 6 to save to database.");
+            System.out
+                    .println("\n[WARNING] Note: You have unsaved changes in memory. Use option 6 to save to database.");
         }
 
         // Loop to allow viewing multiple trashcans
@@ -206,9 +211,9 @@ public class Main {
             try {
                 int id = Integer.parseInt(input);
 
-                // Find the trashcan
+                // Find the trashcan in fresh data
                 Trashcan foundTrashcan = null;
-                for (Trashcan t : inMemoryTrashcans) {
+                for (Trashcan t : freshTrashcans) {
                     if (t.getId() == id) {
                         foundTrashcan = t;
                         break;
