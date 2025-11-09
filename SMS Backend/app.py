@@ -2,8 +2,7 @@ from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
 from flask import Flask, request
 from dotenv import load_dotenv
-import os, psycopg, re, threading, atexit
-import time
+import os, psycopg, re, threading, atexit, time
 from routing_script import fetch_full_trashcans
 
 load_dotenv()
@@ -17,7 +16,8 @@ Type a command name followed by arguments to run a command (ex. SHOW ALL)\n
 show_help_message = """
 SHOW:
 ALL - Displays the status of all bins
-{BUILDING} - Displays the status of all bins in that building
+BUILDING {BUILDING} - Displays the status of all bins in that building
+{ID} - Displays status of the bin
 """
 
 subscriptions_help_message = """
@@ -67,7 +67,7 @@ def send_notifs():
                     to=phone[0].replace("\\", "")
                 )
         
-        time.sleep(20)
+        time.sleep(30)
         
 # Start the messaging loop
 x = threading.Thread(target=send_notifs, daemon=True)
@@ -86,10 +86,12 @@ def send_sql(resp: MessagingResponse) -> None:
     message = ""
     for trashcan in cur.fetchall():
         id = trashcan[0]
-        name = trashcan[1]
-        status = trashcan[3]
+        name = trashcan[1].replace("-", " ")
+        fill_level = trashcan[7]
         
-        message += f"{id}. Trashcan {name} is currently {status}.\n"
+        status = "full" if fill_level == 100 else "empty"
+        
+        message += f"Trashcan {id} ({name}) is currently {status}.\n"
         
     resp.message(message)
 
@@ -114,8 +116,12 @@ def sms_reply() -> str:
                     cur.execute("SELECT * FROM trashcans;")
                     send_sql(resp)
                 # Show all trashcans in a specified location
+                case "building":
+                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[2])}%';")
+                    send_sql(resp)
+                # Show specified trashcan
                 case _:
-                    cur.execute(f"SELECT * FROM trashcans WHERE LOWER(location) LIKE '%{re.escape(body[1])}%';")
+                    cur.execute(f"SELECT * FROM trashcans WHERE id='{int(body[1])}';")
                     send_sql(resp)
         
         case "subscriptions":
