@@ -82,7 +82,7 @@ You’ll be provided with a trash bin that already has all software, sensors and
 
 ---
 
-### 📱 Step 1: Using the SMS Command System
+### 📱 Step 3: Using the SMS Command System
 
 The system is controlled entirely through **text messages** — no app or software needed.
 
@@ -108,7 +108,7 @@ The system is controlled entirely through **text messages** — no app or softwa
 
 ---
 
-### 🧹 Step 3: Resetting After Trash Collection
+### 🧹 Step 4: Resetting After Trash Collection
 
 When janitors empty a bin, they must reset it so the system knows it’s empty.
 
@@ -122,6 +122,7 @@ When janitors empty a bin, they must reset it so the system knows it’s empty.
    The reply should say the bin is **empty (0)**.
 
 ---
+
 ### 🗄️ Step 5: PostgreSQL Database & Java TUI Setup
 
 The Java TUI (Terminal User Interface) allows you to manage trashcan data directly in the database through a terminal interface.
@@ -131,8 +132,8 @@ The Java TUI (Terminal User Interface) allows you to manage trashcan data direct
 Before running the Java TUI, make sure you have:
 
 - **Java Development Kit (JDK) 11 or higher** installed
-    - Check your version: `java -version`
-    - Download: [Oracle JDK](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
+  - Check your version: `java -version`
+  - Download: [Oracle JDK](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
 - **PostgreSQL JDBC Driver** (included in the project)
 - **Database connection credentials** (provided by us)
 
@@ -141,8 +142,8 @@ Before running the Java TUI, make sure you have:
 The Java TUI uses **Gradle** to manage dependencies automatically. The following are included:
 
 - **PostgreSQL JDBC Driver** (version 42.7.3)
-    - Automatically downloaded and managed by Gradle
-    - No manual installation required
+  - Automatically downloaded and managed by Gradle
+  - No manual installation required
 
 #### 🔧 Database Setup
 
@@ -161,7 +162,6 @@ This project uses **Gradle** to build the application. Gradle automatically down
    ```bash
    cd HTTP-HACKS-2025
    ```
-
 2. **Build the JAR file (downloads dependencies and compiles):**
 
    ```bash
@@ -169,7 +169,6 @@ This project uses **Gradle** to build the application. Gradle automatically down
    ```
 
    This will automatically download the PostgreSQL JDBC driver and compile all Java files into a runnable JAR.
-
 3. **Run the TUI:**
 
    ```bash
@@ -177,6 +176,7 @@ This project uses **Gradle** to build the application. Gradle automatically down
    ```
 
    > 💡 **Note:** The first time you build, it may take a few minutes to download dependencies. Subsequent builds will be much faster.
+   >
 
 #### 🔌 Connecting to the Database
 
@@ -194,44 +194,47 @@ Enter the following connection details:
 
 Once connected, you'll see the main menu:
 
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/selectMenu.png)
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/selectMenu.png?raw=true)
 
 **Available Operations:**
 
-| Option                          | Description                                   | Details                                          |
-| ------------------------------- | --------------------------------------------- | ------------------------------------------------ |
-| **1. Connect to Database**      | Establishes connection to PostgreSQL          | Enter URL, username, and password                |
-| **2. View Trashcans**           | Displays all trashcans in a formatted table   | Shows fresh data from database + unsaved entries |
-| **3. Add Trashcan**             | Creates a new trashcan entry (in memory)      | Enter name, location, status (0-100%), building, floor, latitude, longitude        |
-| **4. Update Trashcan**          | Modifies an existing trashcan                 | Enter ID, then update name, location, or status  |
-| **5. Delete Trashcan**          | Removes a trashcan from the database          | Requires confirmation before deletion            |
-| **6. Save Changes to Database** | Commits all in-memory changes to the database | Saves new entries, updates, and deletions        |
-| **7. Exit**                     | Closes the application                        | Warns if there are unsaved changes               |
+| Option                                | Description                                   | Details                                                                     |
+| ------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| **1. Connect to Database**      | Establishes connection to PostgreSQL          | Enter URL, username, and password                                           |
+| **2. View Trashcans**           | Displays all trashcans in a formatted table   | Shows fresh data from database + unsaved entries                            |
+| **3. Add Trashcan**             | Creates a new trashcan entry (in memory)      | Enter name, location, status (0-100%), building, floor, latitude, longitude |
+| **4. Update Trashcan**          | Modifies an existing trashcan                 | Enter ID, then update name, location, or status                             |
+| **5. Delete Trashcan**          | Removes a trashcan from the database          | Requires confirmation before deletion                                       |
+| **6. Save Changes to Database** | Commits all in-memory changes to the database | Saves new entries, updates, and deletions                                   |
+| **7. Exit**                     | Closes the application                        | Warns if there are unsaved changes                                          |
 
 #### Viewing Trashcans
 
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/tableView.png)
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/tableView.png?raw=true)
 
 - **Status** is stored as a **percentage (currently only 0 or 100)** representing fill level:
-    - `0` = Empty
-    - `100` = Full
+  - `0` = Empty
+  - `100` = Full
 
 When viewing trashcans, status is displayed as `##%` format.
 You can select a specific trashcan to view it's detailed information by entering it's ID
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/detailedView.png)
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/detailedView.png?raw=true)
 
 #### Add Trashcan
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/addNewEntry.png)
+
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/addNewEntry.png?raw=true)
 
 #### Update Trashcan
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/modifyEntry.png)
+
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/modifyEntry.png?raw=true)
 
 #### Delete Trashcan
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/deleteEntry.png)
+
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/deleteEntry.png?raw=true)
 
 #### Save Changes to Database
-![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/saveChanges.png)
 
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/saveChanges.png?raw=true)
 
 #### ⚠️ Important Notes
 
@@ -263,4 +266,3 @@ You can select a specific trashcan to view it's detailed information by entering
 - If you see "ClassNotFoundException" for PostgreSQL driver, try running `./gradlew build` again to ensure dependencies are downloaded
 
 ---
-
