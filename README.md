@@ -3,6 +3,8 @@
 The **Filled Unit Notifier (FUN)** is a smart trash management system that helps janitorial staff monitor, reset, and receive updates on trash bin levels in real time.
 Built for **BCIT**, this project combines **IoT hardware**, **Flask backend**, and **SMS integration** to make waste tracking simple, efficient, and automated.
 
+This project was made with 4 total members, with 1 being in term 1.
+
 ---
 
 ## 📖 Overview
