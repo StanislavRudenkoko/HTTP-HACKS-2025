@@ -15,6 +15,44 @@ Janitors can reset bins with a button press and receive real-time notifications 
 
 This system is designed for **BCIT Secure** and **Tall Timbers Wi-Fi** networks.
 
+## Inspiration
+
+We were sitting in the Tall Timber Room and saw a janitor open a trash bin, see that it was empty, and then leave. We thought — what if they could just message their phone, like the TransLink app, and sign up to get notified when a trash can is full? They could also see every bin in a building and its status.
+
+## What It Does
+
+Our app scans a trash can and measures whether it is full or not based on ultrasonic sensors. It then sends the bin’s status to a Flask server, which updates our database with this information. Users can message a number and subscribe to certain bins to receive notifications every 20 minutes about their status, or send a request to see all bins’ statuses or a specific bin’s status.
+
+## How We Built It
+
+We used a Raspberry Pi and ultrasonic sensors for the hardware side. We used a Flask server and Twilio for real-time messaging, and a PostgreSQL database to keep track of the current status of each trash can along with the trashcans users would receive notifications about. We also used Java to create a terminal-based UI for interacting with the PostgreSQL database.
+
+## Challenges We Ran Into
+
+**Hardware Challenges**`<br>`
+Our sensors sometimes sent false readings due to the reflection inside the bin. We used a counter to ensure the value was consistent during a 15-second phase to confirm whether the bin was empty or full.
+
+**Software Challenges**`<br>`
+We ran into issues where our trashcans, phone messaging service, and our SQL database could not communicate with each other. The issue became really bad when we had the servers on different networks, and became impossible when connecting to the BCIT secure network. This was solved by using ngrok, a service used to forward certain ports through an online service, and the issue disappeared completely.
+
+**Edge Cases**
+
+1. We get bad readings sometimes the reading can be too low or high, due to hallucinations or trash being inserted but falling. We set up a counter and a timer for 10 seconds. It checks when we get a reading if it falls within a conditon such as high or low we will increment count. If it hits 5 within 10 seconds we know the reading is most likely true so we can change to full.
+2. We didn't want to run out of credits/oversend data to the api in flask. We solved this by adding a button to the raspberrypi. If the bin state is full stay full and when the button is clicked while chainging the grabage it will reset state back to empty.
+3. Sometimes, notifications get sent out, read, and forgot about. We solved this by sending out a new notification every 20 seconds for debugging, and would be 20 minutes for production.
+
+## Accomplishments That We’re Proud Of
+
+We built a reliable system to communicate with our phones and get live data. We found a way to save time by turning off the Raspberry Pi while trash is being changed and restarting it afterward. We also added a clean terminal-based UI/UX for the database. A janitor even told us this would help them a lot and gave us props.
+
+## What We Learned
+
+We learned how to use Postman and test API calls. We also learned how four people can work on different components and still stay on the same page.
+
+## What’s Next for the FUN
+
+We want to upgrade our sensors to more reliable models. We also plan to add more devices and collect additional data to improve our project. We would love to make the system cheaper and more resilient so more of them could be deployed at a much lower cost. We would also love to make the back-end system more reliable and easier to setup so anyone could deploy a FUN.`<br><br>``<br>`More technical documentation can be found within the GitHub readme.
+
 ---
 
 ## 🧰 Installation Guide
