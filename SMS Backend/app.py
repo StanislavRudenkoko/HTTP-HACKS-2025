@@ -2,13 +2,13 @@ from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
 from flask import Flask, request
 from dotenv import load_dotenv
-import os, psycopg, re, threading, atexit, time
-from routing_script import fetch_full_trashcans
+import os, psycopg, re, threading, atexit, time, datetime
+from routing_script import get_route_text_from_cursor
 
 load_dotenv()
 
 help_message = """
-Type a command name followed by arguments to run a command (ex. SHOW ALL)\n
+Type a command name followed by arguments to run a command (ex. SHOW SE2)\n
 SHOW - Options for show command
 SUBSCRIPTIONS - Options for subscriptions
 """
@@ -27,6 +27,12 @@ ADD {BIN_ID} - Subscribe to a bin
 ADD BUILDING {BUILDING} - Subscribe to all bins in that building
 DELETE ALL - Unsubscribe from all bins
 DELETE {BIN_ID} - Unsubscribe from a bin
+"""
+
+routing_help_message = """
+ROUTE:
+ALL - Displays optimal route for all filled trashcans
+{BUILDING} - Displays optimal route for all filled trashcans in a building
 """
 
 account_sid = os.environ["TWILIO_ACCOUNT_SID"]
@@ -50,33 +56,34 @@ cur.execute("SET search_path TO smart_trashcan;")
 
 
 exit_event = threading.Event()
-def send_notifs():
-    while not exit_event.is_set():
-        for trashcan in fetch_full_trashcans(db):
-            time_since_last_update = time.time() - trashcan[7].timestamp()
-            if time_since_last_update < 1200:
-                continue
+# def send_notifs():
+#     while not exit_event.is_set():
+#         for trashcan in fetch_full_trashcans(db):
+#             time_since_last_update = time.time() - trashcan[7].timestamp()
+#             if time_since_last_update < 30:
+#                 continue
             
-            cur.execute(f"UPDATE trashcans SET last_updated=NOW() WHERE id={trashcan[0]}")
-            cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id='{trashcan[0]}'")
-            phones = cur.fetchall()
-            for phone in phones:
-                client.messages.create(
-                    body=f"Trashcan {trashcan[1]} is full!",
-                    from_="+19302033111",
-                    to=phone[0].replace("\\", "")
-                )
+#             cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={trashcan[0]}")
+#             phones = cur.fetchall()
+#             for phone in phones:
+#                 cur.execute(f"UPDATE trashcans SET last_updated=NOW() WHERE id={trashcan[0]}")
+#                 client.messages.create(
+#                     body=f"Trashcan {trashcan[1]} is full!",
+#                     from_="+19302033111",
+#                     to=phone[0].replace("\\", "")
+#                 )
         
-        time.sleep(30)
+#         time.sleep(10)
         
-# Start the messaging loop
-x = threading.Thread(target=send_notifs, daemon=True)
-x.start()
+# # Start the messaging loop
+# x = threading.Thread(target=send_notifs, daemon=True)
+# x.start()
 
 
 def stop_server():
     exit_event.set()
-    x.join()
+    # x.join()
+    cur.close()
 atexit.register(stop_server)
 
 if __name__ == "__main__":
@@ -192,6 +199,15 @@ def sms_reply() -> str:
                         case _:
                             cur.execute(f"DELETE FROM subscriptions WHERE phone='{phone}' AND trashcan_id={re.escape(body[2])}")
                             resp.message(f"Subscription for bin {body[2]} deleted successfully.")
+                         
+        case "route":
+            building = None
+            match body[1]:
+                case "all":
+                    ...
+                case _:
+                    building = re.escape(body[1])
+            resp.message(get_route_text_from_cursor(cur, building))
                             
         # Unrecognized message
         case _:
@@ -204,12 +220,27 @@ def sms_reply() -> str:
 def data_fetch() -> str:
     body = request.get_json()
     
-    id = int(body['id'])
-    status = int(body['status'])
-    
-    print(f"{id}, {status}")
-    
-    cur.execute(f"UPDATE trashcans SET status={status} WHERE id={id};")
-    
-    return "Data was succesfully stored."
+    try:
+        id = int(body['id'])
+        status = int(body['status'])
+        print(status)
+        cur.execute(f"UPDATE trashcans SET status={status} WHERE id={id};")
+        cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={id};")
+
+        if status == 100:
+            cur.execute(f"SELECT location FROM trashcans WHERE id={id};")
+
+            trashcan = cur.fetchone()[0]
+            phones = cur.fetchall()
+
+            for phone in phones:
+                client.messages.create(
+                    body=f"Trashcan {trashcan} is full!",
+                    from_="+16363673341 ",
+                    to=phone[0].replace("\\", "")
+                )
+            
+        return "Data was succesfully stored."
+    except TypeError:
+        raise Exception("Invalid data.") 
 

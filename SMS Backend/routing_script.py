@@ -29,7 +29,7 @@ def connect_db():
 # --------------------------
 # Fetch Trashcans
 # --------------------------
-def fetch_full_trashcans(conn, threshold=75):
+def fetch_full_trashcans(conn, threshold=100):
     """Fetch trashcans with status >= threshold."""
     with conn.cursor() as cur:
         cur.execute("""
@@ -109,14 +109,16 @@ def format_route(route):
 # --------------------------
 # Modular function for SMS
 # --------------------------
-def get_route_text_from_cursor(cur, threshold=75):
+def get_route_text_from_cursor(cur, building = None, threshold=75):
     """
     Accepts a psycopg cursor and returns a formatted route string.
     Can be called from another module to send SMS.
     :param cur for db cursor
+    :param building the building to filter, can be none to show all trashcan route
     :param threshold  percentage after which a can is considered full
     """
-    cur.execute("""
+    building_filter = f"AND LOWER(building)='{building}'" if building != None else ""
+    cur.execute(f"""
                 SELECT id,
                        name,
                        building,
@@ -126,7 +128,7 @@ def get_route_text_from_cursor(cur, threshold=75):
                        status,
                        last_updated
                 FROM smart_trashcan.trashcans
-                WHERE status >= %s
+                WHERE status >= %s {building_filter}
                 ORDER BY building, floor, name;
                 """, (threshold,))
     trashcans = cur.fetchall()
