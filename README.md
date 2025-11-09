@@ -208,13 +208,30 @@ Once connected, you'll see the main menu:
 | **6. Save Changes to Database** | Commits all in-memory changes to the database | Saves new entries, updates, and deletions        |
 | **7. Exit**                     | Closes the application                        | Warns if there are unsaved changes               |
 
-#### 📊 Understanding Status Values
+#### Viewing Trashcans
+
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/tableView.png)
 
 - **Status** is stored as a **percentage (currently only 0 or 100)** representing fill level:
     - `0` = Empty
     - `100` = Full
 
 When viewing trashcans, status is displayed as `##%` format.
+You can select a specific trashcan to view it's detailed information by entering it's ID
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/detailedView.png)
+
+#### Add Trashcan
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/addNewEntry.png)
+
+#### Update Trashcan
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/modifyEntry.png)
+
+#### Delete Trashcan
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/deleteEntry.png)
+
+#### Save Changes to Database
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/saveChanges.png)
+
 
 #### ⚠️ Important Notes
 
