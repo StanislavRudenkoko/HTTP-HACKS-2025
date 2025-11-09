@@ -73,26 +73,35 @@ exit_event = threading.Event()
 #                     from_="+19302033111",
 #                     to=phone[0].replace("\\", "")
 #                 )
-        
+
 #         time.sleep(10)
         
 # # Start the messaging loop
 # x = threading.Thread(target=send_notifs, daemon=True)
 # x.start()
 
+# Makes sure the SQL connection does not time out by pinging the server every 20 seconds
+# def keep_alive():
+#     while not exit_event.is_set():
+#         cur.execute("SELECT * FROM subscriptions")
+#         time.sleep(5)
+        
+# x = threading.Thread(target=keep_alive, daemon=True)
+# x.start()
 
+@atexit.register
 def stop_server():
     exit_event.set()
     # x.join()
     cur.close()
-atexit.register(stop_server)
+    db.commit()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False)
 
 def send_sql(resp: MessagingResponse) -> None:
     message = ""
-    for trashcan in cur.fetchall():
+    for trashcan in cur.fetchmany(5):
         id = trashcan[0]
         name = trashcan[1].replace("-", " ")
         fill_level = trashcan[7]
@@ -137,7 +146,7 @@ def sms_reply() -> str:
             match body[1]:
                 # Show all trashcans
                 case "all":
-                    cur.execute("SELECT * FROM trashcans;")
+                    cur.execute("SELECT * FROM smart_trashcan.trashcans ORDER BY id ASC;")
                     send_sql(resp)
                 # Show all trashcans in a specified location
                 case "building":
@@ -157,7 +166,7 @@ def sms_reply() -> str:
             match body[1]:
                 # Show all subscriptions
                 case "show":
-                    cur.execute(f"SELECT trashcan_id, name, status FROM subscriptions JOIN trashcans ON subscriptions.phone='{phone}';")
+                    cur.execute(f"SELECT trashcans.* FROM smart_trashcan.subscriptions JOIN smart_trashcan.trashcans ON trashcans.id=smart_trashcan.subscriptions.trashcan_id AND subscriptions.phone='{phone.replace("+","")}';")
                     send_sql(resp)
                     
                 case "add":
@@ -222,24 +231,24 @@ def sms_reply() -> str:
 @app.route("/data", methods={"GET", "POST"})
 def data_fetch() -> str:
     body = request.get_json()
-    
+    print(body)
     try:
         id = int(body['id'])
         status = int(body['status'])
         print(status)
-        cur.execute(f"UPDATE trashcans SET status={status} WHERE id={id};")
+        cur.execute(f"UPDATE smart_trashcan.trashcans SET status={status} WHERE id={id};")
 
         if status == 100:
-            cur.execute(f"SELECT location FROM trashcans WHERE id={id};")
+            cur.execute(f"SELECT location FROM smart_trashcan.trashcans WHERE id={id};")
 
             trashcan = cur.fetchone()[0]
-            cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={id};")
+            cur.execute(f"SELECT phone FROM smart_trashcan.subscriptions WHERE trashcan_id={id};")
             phones = cur.fetchall()
 
             for phone in phones:
                 client.messages.create(
                     body=f"Trashcan {trashcan} is full!",
-                    from_="+16363673341 ",
+                    from_=os.environ["TWILIO_NUMBER"],
                     to=phone[0].replace("\\", "")
                 )
         db.commit()
