@@ -9,8 +9,8 @@ load_dotenv()
 
 help_message = """
 Type a command name followed by arguments to run a command (ex. SHOW ALL)\n
-? SHOW - Options for show command
-? SUBSCRIPTIONS - Options for subscriptions
+SHOW - Options for show command
+SUBSCRIPTIONS - Options for subscriptions
 """
 
 show_help_message = """
@@ -23,7 +23,7 @@ BUILDING {BUILDING} - Displays the status of all bins in that building
 subscriptions_help_message = """
 SUBSCRIPTIONS:
 SHOW - Displays bins you are subscribed to
-ADD ID {BIN_ID} - Subscribe to a bin
+ADD {BIN_ID} - Subscribe to a bin
 ADD BUILDING {BUILDING} - Subscribe to all bins in that building
 DELETE ALL - Unsubscribe from all bins
 DELETE {BIN_ID} - Unsubscribe from a bin
@@ -92,7 +92,10 @@ def send_sql(resp: MessagingResponse) -> None:
         status = "full" if fill_level == 100 else "empty"
         
         message += f"Trashcan {id} ({name}) is currently {status}.\n"
-        
+    
+    if message == "":
+        message = "Sorry, no results found."
+    
     resp.message(message)
 
 # Handles everything for receiving sms messages
@@ -104,7 +107,18 @@ def sms_reply() -> str:
     
     match body[0]:
         case "?":
-            resp.message(help_message)
+            if len(body) == 1:
+                resp.message(help_message)
+                return str(resp)
+            
+            match body[1]:
+                case "show":
+                    resp.message(show_help_message)
+                case "subscribtions":
+                    resp.message(subscriptions_help_message)
+                case _:
+                    resp.message(help_message)
+                    
         case "show":
             if len(body) == 1:
                 resp.message(show_help_message)
@@ -137,14 +151,18 @@ def sms_reply() -> str:
                     send_sql(resp)
                     
                 case "add":
-                    argument = int(body[3])
                     match body[2]:
-                        # Add a bin by ID
-                        case "id":
-                            cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({argument}, {phone});")
-                            resp.message(f"Subscription for trashcan {argument} added successfully.")
                         # Add all bins in a building
                         case "building":
+                            if len(body) < 4:
+                                resp.message(subscriptions_help_message)
+                                return str(resp)
+                            argument = None
+                            try:
+                                argument = int(body[3])
+                            except TypeError:
+                                resp.message("Invalid argument for add by building.")
+                                return str(resp)
                             subscriptions_added = 0
                             cur.execute(f"SELECT id FROM trashcans WHERE LOWER(location) LIKE '%{argument}%';")
                             trashcans = cur.fetchall()
@@ -153,19 +171,31 @@ def sms_reply() -> str:
                                 subscriptions_added += 1
                                 
                             resp.message(f"{subscriptions_added} subscriptions for building {argument} added successfully.")
-                
+                        # Add a bin by ID
+                        case _:
+                            if len(body) < 3:
+                                resp.message(subscriptions_help_message)
+                                return str(resp)
+                            try:
+                                cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({int(body[2])}, {phone});")
+                                resp.message(f"Subscription for trashcan {int(body[2])} added successfully.")
+                            except TypeError:
+                                resp.message("Invalid argument for add by id.")
+                                return str(resp)
                 case "delete":
                     match body[2]:
                         # Remove subscription from all bins
                         case "all":
                             cur.execute(f"DELETE FROM subscriptions WHERE phone='{phone}';")
+                            resp.message("All subscriptions deleted successfully.")
                         # Remove subscription from a specific bin
                         case _:
                             cur.execute(f"DELETE FROM subscriptions WHERE phone='{phone}' AND trashcan_id={re.escape(body[2])}")
+                            resp.message(f"Subscription for bin {body[2]} deleted successfully.")
                             
         # Unrecognized message
         case _:
-            resp.message("Sorry, I didn't understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
+            resp.message("Sorry, I did not understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
 
     return str(resp)
 
