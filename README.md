@@ -79,6 +79,7 @@ You’ll be provided with a trash bin that already has all software, sensors and
 4. The bin is now ready for use again.
 
 > 💡 Tip: You’ll hear a small click each time you press the button — that’s normal!
+> Note: after resetting, wait 40 seconds before messaging to check status
 
 ---
 
