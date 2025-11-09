@@ -162,7 +162,7 @@ def sms_reply() -> str:
                 resp.message(subscriptions_help_message)
                 return str(resp)
             
-            phone = request.values.get("From", None)
+            phone = request.values.get("From", None).replace("+","")
             match body[1]:
                 # Show all subscriptions
                 case "show":
@@ -178,7 +178,7 @@ def sms_reply() -> str:
                                 return str(resp)
                             argument = None
                             try:
-                                argument = int(body[3])
+                                argument = body[3]
                             except TypeError:
                                 resp.message("Invalid argument for add by building.")
                                 return str(resp)
@@ -186,7 +186,7 @@ def sms_reply() -> str:
                             cur.execute(f"SELECT id FROM trashcans WHERE LOWER(location) LIKE '%{argument}%';")
                             trashcans = cur.fetchall()
                             for trashcan in trashcans:
-                                cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({trashcan[0]}, '{phone})';")
+                                cur.execute(f"INSERT INTO subscriptions(trashcan_id, phone) VALUES ({trashcan[0]}, '{phone}');")
                                 subscriptions_added += 1
                                 
                             resp.message(f"{subscriptions_added} subscriptions for building {argument} added successfully.")
