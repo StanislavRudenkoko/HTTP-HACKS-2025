@@ -39,15 +39,17 @@ Follow these steps carefully — you don’t need any programming knowledge to g
 **Twilio:**
 
 1. Create an account on [Twilio](https://www.twilio.com/try-twilio)
-2. Locate your Account SID, Auth Token, and Twilio Phone number located at the bottom of the page
-3. Create 3 new entries in your .env file named TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER, and copy your data into those entries
+2. Press the Get a Phone Number button, and then click Close to register a trial number
+3. Locate your Account SID, Auth Token, and Twilio Phone number located at the bottom of the page
+4. Create 3 new entries in your .env file named TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER, and copy your data into those entries
 
 **PostgresSQL**
 
-1. Follow [this guide](https://www.instaclustr.com/education/postgresql/postgresql-tutorial-get-started-with-postgresql-in-4-easy-steps/#sec-3) to setup a Postgres SQL server, making sure to remember your host, port, username, and password for the server
-2. Create 4 new entries in your .env file named SQL_HOST, SQL_PORT, SQL_USER, and SQL_PASSWORD, and put your data into those entries
-3. Within your newly created database, run the schema.sql file located in the "psql" directory in this repository
-4. Optionally, run the seeding.sql file if you do not already have data for your database (this is only for testing purposes, all data can be cleared once everything is setup)
+1. Download the Postgres SQL server installer from [here](https://www.postgresql.org/download/)
+2. Follow [this guide](https://www.instaclustr.com/education/postgresql/postgresql-tutorial-get-started-with-postgresql-in-4-easy-steps/#sec-3) to setup a Postgres SQL server, making sure to remember your host, port, username, and password for the server
+3. Create 4 new entries in your .env file named SQL_HOST, SQL_PORT, SQL_USER, and SQL_PASSWORD, and put your data into those entries
+4. Within your newly created database, run the schema.sql file located in the "psql" directory in this repository
+5. Optionally, run the seeding.sql file if you do not already have data for your database (this is only for testing purposes, all data can be cleared once everything is setup)
 
 In the end, your .env file will look something like this:
 
@@ -184,7 +186,7 @@ When you start the TUI, you'll see a menu. Select **option 1** to connect to the
 
 Enter the following connection details:
 
-- **DB URL:** `jdbc:postgresql://6.tcp.us-cal-1.ngrok.io:17425/trash_db`
+- **DB URL:** ``jdbc:postgresql://0.tcp.us-cal-1.ngrok.io:12025/trash_db``
 - **Username:** (Provided by us)
 - **Password:** (Provided by us)
 
