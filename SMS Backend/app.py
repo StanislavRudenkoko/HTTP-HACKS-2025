@@ -11,6 +11,7 @@ help_message = """
 Type a command name followed by arguments to run a command (ex. SHOW SE2)\n
 SHOW - Options for show command
 SUBSCRIPTIONS - Options for subscriptions
+ROUTE - Options for routes
 """
 
 show_help_message = """
@@ -121,8 +122,10 @@ def sms_reply() -> str:
             match body[1]:
                 case "show":
                     resp.message(show_help_message)
-                case "subscribtions":
+                case "subscriptions":
                     resp.message(subscriptions_help_message)
+                case "route":
+                    resp.message(routing_help_message)
                 case _:
                     resp.message(help_message)
                     
@@ -212,7 +215,7 @@ def sms_reply() -> str:
         # Unrecognized message
         case _:
             resp.message("Sorry, I did not understand that. Please make sure you are typing your command correctly, or type ? to see a list of options.")
-
+    db.commit()
     return str(resp)
 
 # Handles everything for receiving data from bins
@@ -225,12 +228,12 @@ def data_fetch() -> str:
         status = int(body['status'])
         print(status)
         cur.execute(f"UPDATE trashcans SET status={status} WHERE id={id};")
-        cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={id};")
 
         if status == 100:
             cur.execute(f"SELECT location FROM trashcans WHERE id={id};")
 
             trashcan = cur.fetchone()[0]
+            cur.execute(f"SELECT phone FROM subscriptions WHERE trashcan_id={id};")
             phones = cur.fetchall()
 
             for phone in phones:
@@ -239,7 +242,7 @@ def data_fetch() -> str:
                     from_="+16363673341 ",
                     to=phone[0].replace("\\", "")
                 )
-            
+        db.commit()
         return "Data was succesfully stored."
     except TypeError:
         raise Exception("Invalid data.") 
