@@ -102,6 +102,8 @@ In the end, your .env file will look something like this:
 3. Run ``pip install -r requirements.txt``` and wait for the installer to finish
 4. To start the server, run ``flask run`` in the terminal
 
+**NOTE - When running your Flask and SQL servers, it is recommended to use port forwarding or a service like [ngrok](https://dashboard.ngrok.com/get-started/setup) to allow data to be sent across different networks.**
+
 ---
 
 ### 🗑️ Step 2: Setting Up the Trash Bin
