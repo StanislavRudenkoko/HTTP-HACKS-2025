@@ -1,7 +1,9 @@
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -180,15 +182,49 @@ public class Main {
         // Fetch fresh data from database
         List<Trashcan> freshTrashcans = trashcanService.getAllTrashcans();
 
-        if (freshTrashcans.isEmpty()) {
+        // Get the actual next ID from the database sequence (accounts for sequence
+        // state)
+        int nextSequenceId = trashcanService.getNextId();
+
+        // Create display list with preview IDs for unsaved entries
+        List<Trashcan> displayTrashcans = new ArrayList<>(freshTrashcans);
+        List<Integer> previewIds = new ArrayList<>();
+        int nextPreviewId = nextSequenceId;
+
+        // Map to track original negative ID to preview ID for lookup
+        Map<Integer, Integer> idMapping = new HashMap<>();
+
+        for (Trashcan t : inMemoryTrashcans) {
+            if (t.getId() < 0) {
+                // Create a copy with preview ID for display
+                Trashcan displayCopy = new Trashcan(
+                        nextPreviewId,
+                        t.getName(),
+                        t.getLocation(),
+                        t.getStatus(),
+                        t.getLastUpdated());
+                displayTrashcans.add(displayCopy);
+                previewIds.add(nextPreviewId);
+                idMapping.put(nextPreviewId, t.getId()); // Map preview ID to original negative ID
+                nextPreviewId++;
+            }
+        }
+
+        if (displayTrashcans.isEmpty()) {
             System.out.println("No trashcans found in database.");
             return;
         }
 
-        trashcanService.displayTrashcans(freshTrashcans);
-        if (hasUnsavedChanges) {
-            System.out
-                    .println("\n[WARNING] Note: You have unsaved changes in memory. Use option 6 to save to database.");
+        trashcanService.displayTrashcans(displayTrashcans);
+        if (!previewIds.isEmpty()) {
+            System.out.print("\n[WARNING] Note: Entries with IDs ");
+            for (int i = 0; i < previewIds.size(); i++) {
+                System.out.print(previewIds.get(i));
+                if (i < previewIds.size() - 1) {
+                    System.out.print(", ");
+                }
+            }
+            System.out.println(" are not saved yet. Use option 6 to save to database.");
         }
 
         // Loop to allow viewing multiple trashcans
@@ -211,18 +247,41 @@ public class Main {
             try {
                 int id = Integer.parseInt(input);
 
-                // Find the trashcan in fresh data
+                // Find the trashcan - check if it's a preview ID first
                 Trashcan foundTrashcan = null;
-                for (Trashcan t : freshTrashcans) {
-                    if (t.getId() == id) {
-                        foundTrashcan = t;
-                        break;
+                Trashcan displayTrashcan = null;
+
+                // Check if it's a preview ID (unsaved entry)
+                if (idMapping.containsKey(id)) {
+                    // Find the original entry with negative ID
+                    int originalId = idMapping.get(id);
+                    for (Trashcan t : inMemoryTrashcans) {
+                        if (t.getId() == originalId) {
+                            foundTrashcan = t;
+                            // Create display version with preview ID
+                            displayTrashcan = new Trashcan(
+                                    id, // Use preview ID for display
+                                    t.getName(),
+                                    t.getLocation(),
+                                    t.getStatus(),
+                                    t.getLastUpdated());
+                            break;
+                        }
+                    }
+                } else {
+                    // Check database entries
+                    for (Trashcan t : freshTrashcans) {
+                        if (t.getId() == id) {
+                            foundTrashcan = t;
+                            displayTrashcan = t; // Use as-is for saved entries
+                            break;
+                        }
                     }
                 }
 
-                if (foundTrashcan != null) {
+                if (foundTrashcan != null && displayTrashcan != null) {
                     System.out.println();
-                    trashcanService.displayTrashcanDetail(foundTrashcan);
+                    trashcanService.displayTrashcanDetail(displayTrashcan);
                 } else {
                     System.out.println("[ERROR] No trashcan found with ID: " + id);
                 }
@@ -268,8 +327,21 @@ public class Main {
                 new Timestamp(System.currentTimeMillis()));
         inMemoryTrashcans.add(trashcan);
         hasUnsavedChanges = true;
+
+        // Calculate preview ID using actual sequence value (accounts for sequence
+        // state)
+        int nextSequenceId = trashcanService.getNextId();
+        // Count unsaved entries to get the correct preview ID
+        int unsavedCount = 0;
+        for (Trashcan t : inMemoryTrashcans) {
+            if (t.getId() < 0) {
+                unsavedCount++;
+            }
+        }
+        int previewId = nextSequenceId + unsavedCount - 1; // -1 because we just added this one
+
         System.out.println(
-                "[OK] Trashcan added to memory (ID: " + trashcan.getId() + "). Use option 6 to save to database.");
+                "[OK] Trashcan added to memory (ID: " + previewId + "). Use option 6 to save to database.");
     }
 
     private static void updateTrashcan() {

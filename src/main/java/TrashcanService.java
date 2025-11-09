@@ -10,6 +10,69 @@ public class TrashcanService {
     }
 
     /**
+     * Gets the next ID that will be assigned by the database sequence.
+     * This queries the actual sequence value, which accounts for deletions
+     * and ensures preview IDs match what will actually be assigned.
+     * 
+     * @return The next ID that will be assigned, or maxId + 1 if sequence query
+     *         fails
+     */
+    public int getNextId() {
+        Connection conn = dbManager.getConnection();
+        if (conn == null) {
+            return 1;
+        }
+
+        // First, check if the table is empty
+        // If empty, the next ID will be 1 (sequence starts at 1)
+        List<Trashcan> trashcans = getAllTrashcans();
+        if (trashcans.isEmpty()) {
+            return 1;
+        }
+
+        // If table has data, query the sequence to get the actual next value
+        // The sequence name for SERIAL columns is: tablename_columnname_seq
+        // Since we're in smart_trashcan schema, try both with and without schema prefix
+        String[] sqlQueries = {
+                "SELECT last_value FROM smart_trashcan.trashcans_id_seq",
+                "SELECT last_value FROM trashcans_id_seq"
+        };
+
+        for (String sql : sqlQueries) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql);
+                    ResultSet rs = pstmt.executeQuery()) {
+
+                if (rs.next()) {
+                    int lastValue = rs.getInt(1);
+                    // last_value is the last value used, so next will be last_value + 1
+                    // However, we need to ensure it's at least maxId + 1
+                    int maxId = 0;
+                    for (Trashcan t : trashcans) {
+                        if (t.getId() > maxId) {
+                            maxId = t.getId();
+                        }
+                    }
+                    // Return the larger of (last_value + 1) or (maxId + 1)
+                    // This handles cases where sequence might be behind due to manual inserts
+                    return Math.max(lastValue + 1, maxId + 1);
+                }
+            } catch (SQLException e) {
+                // Try next query
+                continue;
+            }
+        }
+
+        // Fallback: calculate from max ID in table
+        int maxId = 0;
+        for (Trashcan t : trashcans) {
+            if (t.getId() > maxId) {
+                maxId = t.getId();
+            }
+        }
+        return maxId + 1;
+    }
+
+    /**
      * Fetches all trashcans from the database.
      * 
      * @return List of all Trashcan objects, empty list if none found or error
