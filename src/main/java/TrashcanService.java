@@ -87,7 +87,7 @@ public class TrashcanService {
             return trashcans;
         }
 
-        String sql = "SELECT id, name, location, status, last_updated FROM trashcans ORDER BY id";
+        String sql = "SELECT id, name, location, building, floor, latitude, longitude, status, route_priority, last_updated FROM trashcans ORDER BY id";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
                 ResultSet rs = pstmt.executeQuery()) {
@@ -97,7 +97,12 @@ public class TrashcanService {
                         rs.getInt("id"),
                         rs.getString("name"),
                         rs.getString("location"),
+                        rs.getString("building"),
+                        rs.getObject("floor", Integer.class), // Can be null
+                        rs.getBigDecimal("latitude"),
+                        rs.getBigDecimal("longitude"),
                         rs.getInt("status"),
+                        rs.getInt("route_priority"),
                         rs.getTimestamp("last_updated"));
                 trashcans.add(trashcan);
             }
@@ -135,18 +140,35 @@ public class TrashcanService {
             return;
         }
 
-        String sql = "INSERT INTO trashcans (name, location, status, last_updated) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO trashcans (name, location, building, floor, latitude, longitude, status, route_priority, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, trashcan.getName());
             pstmt.setString(2, trashcan.getLocation());
-            pstmt.setInt(3, trashcan.getStatus());
+            pstmt.setString(3, trashcan.getBuilding());
+            if (trashcan.getFloor() != null) {
+                pstmt.setInt(4, trashcan.getFloor());
+            } else {
+                pstmt.setNull(4, java.sql.Types.INTEGER);
+            }
+            if (trashcan.getLatitude() != null) {
+                pstmt.setBigDecimal(5, trashcan.getLatitude());
+            } else {
+                pstmt.setNull(5, java.sql.Types.DECIMAL);
+            }
+            if (trashcan.getLongitude() != null) {
+                pstmt.setBigDecimal(6, trashcan.getLongitude());
+            } else {
+                pstmt.setNull(6, java.sql.Types.DECIMAL);
+            }
+            pstmt.setInt(7, trashcan.getStatus());
+            pstmt.setInt(8, trashcan.getRoutePriority());
 
             // Use provided timestamp or current timestamp
             if (trashcan.getLastUpdated() != null) {
-                pstmt.setTimestamp(4, trashcan.getLastUpdated());
+                pstmt.setTimestamp(9, trashcan.getLastUpdated());
             } else {
-                pstmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+                pstmt.setTimestamp(9, new Timestamp(System.currentTimeMillis()));
             }
 
             int rowsAffected = pstmt.executeUpdate();
@@ -203,13 +225,30 @@ public class TrashcanService {
             return;
         }
 
-        String sql = "UPDATE trashcans SET name = ?, location = ?, status = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?";
+        String sql = "UPDATE trashcans SET name = ?, location = ?, building = ?, floor = ?, latitude = ?, longitude = ?, status = ?, route_priority = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, trashcan.getName());
             pstmt.setString(2, trashcan.getLocation());
-            pstmt.setInt(3, trashcan.getStatus());
-            pstmt.setInt(4, trashcan.getId());
+            pstmt.setString(3, trashcan.getBuilding());
+            if (trashcan.getFloor() != null) {
+                pstmt.setInt(4, trashcan.getFloor());
+            } else {
+                pstmt.setNull(4, java.sql.Types.INTEGER);
+            }
+            if (trashcan.getLatitude() != null) {
+                pstmt.setBigDecimal(5, trashcan.getLatitude());
+            } else {
+                pstmt.setNull(5, java.sql.Types.DECIMAL);
+            }
+            if (trashcan.getLongitude() != null) {
+                pstmt.setBigDecimal(6, trashcan.getLongitude());
+            } else {
+                pstmt.setNull(6, java.sql.Types.DECIMAL);
+            }
+            pstmt.setInt(7, trashcan.getStatus());
+            pstmt.setInt(8, trashcan.getRoutePriority());
+            pstmt.setInt(9, trashcan.getId());
 
             int rowsAffected = pstmt.executeUpdate();
 
@@ -290,7 +329,7 @@ public class TrashcanService {
             return;
         }
 
-        String sql = "INSERT INTO trashcans (name, location, status, last_updated) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO trashcans (name, location, building, floor, latitude, longitude, status, route_priority, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             int batchCount = 0;
@@ -310,12 +349,29 @@ public class TrashcanService {
 
                 pstmt.setString(1, trashcan.getName());
                 pstmt.setString(2, trashcan.getLocation());
-                pstmt.setInt(3, trashcan.getStatus());
+                pstmt.setString(3, trashcan.getBuilding());
+                if (trashcan.getFloor() != null) {
+                    pstmt.setInt(4, trashcan.getFloor());
+                } else {
+                    pstmt.setNull(4, java.sql.Types.INTEGER);
+                }
+                if (trashcan.getLatitude() != null) {
+                    pstmt.setBigDecimal(5, trashcan.getLatitude());
+                } else {
+                    pstmt.setNull(5, java.sql.Types.DECIMAL);
+                }
+                if (trashcan.getLongitude() != null) {
+                    pstmt.setBigDecimal(6, trashcan.getLongitude());
+                } else {
+                    pstmt.setNull(6, java.sql.Types.DECIMAL);
+                }
+                pstmt.setInt(7, trashcan.getStatus());
+                pstmt.setInt(8, trashcan.getRoutePriority());
 
                 if (trashcan.getLastUpdated() != null) {
-                    pstmt.setTimestamp(4, trashcan.getLastUpdated());
+                    pstmt.setTimestamp(9, trashcan.getLastUpdated());
                 } else {
-                    pstmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+                    pstmt.setTimestamp(9, new Timestamp(System.currentTimeMillis()));
                 }
 
                 pstmt.addBatch();

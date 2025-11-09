@@ -4,7 +4,12 @@ public class Trashcan {
     private int id;
     private String name;
     private String location;
+    private String building;
+    private Integer floor;
+    private java.math.BigDecimal latitude;
+    private java.math.BigDecimal longitude;
     private int status; // Percentage (0-100)
+    private int routePriority;
     private Timestamp lastUpdated;
 
     // Default constructor
@@ -12,19 +17,33 @@ public class Trashcan {
     }
 
     // Constructor without id (for creating new trashcans)
-    public Trashcan(String name, String location, int status, Timestamp lastUpdated) {
+    public Trashcan(String name, String location, String building, Integer floor,
+            java.math.BigDecimal latitude, java.math.BigDecimal longitude,
+            int status, int routePriority, Timestamp lastUpdated) {
         this.name = name;
         this.location = location;
+        this.building = building;
+        this.floor = floor;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.status = status;
+        this.routePriority = routePriority;
         this.lastUpdated = lastUpdated;
     }
 
     // Full constructor
-    public Trashcan(int id, String name, String location, int status, Timestamp lastUpdated) {
+    public Trashcan(int id, String name, String location, String building, Integer floor,
+            java.math.BigDecimal latitude, java.math.BigDecimal longitude,
+            int status, int routePriority, Timestamp lastUpdated) {
         this.id = id;
         this.name = name;
         this.location = location;
+        this.building = building;
+        this.floor = floor;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.status = status;
+        this.routePriority = routePriority;
         this.lastUpdated = lastUpdated;
     }
 
@@ -45,6 +64,26 @@ public class Trashcan {
         return status;
     }
 
+    public String getBuilding() {
+        return building;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public java.math.BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public java.math.BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public int getRoutePriority() {
+        return routePriority;
+    }
+
     public Timestamp getLastUpdated() {
         return lastUpdated;
     }
@@ -62,8 +101,28 @@ public class Trashcan {
         this.location = location;
     }
 
+    public void setBuilding(String building) {
+        this.building = building;
+    }
+
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public void setLatitude(java.math.BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(java.math.BigDecimal longitude) {
+        this.longitude = longitude;
+    }
+
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public void setRoutePriority(int routePriority) {
+        this.routePriority = routePriority;
     }
 
     public void setLastUpdated(Timestamp lastUpdated) {
@@ -157,8 +216,18 @@ public class Trashcan {
                 name != null ? name : "N/A"));
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Location:",
                 location != null ? location : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Building:",
+                building != null ? building : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Floor:",
+                floor != null ? String.valueOf(floor) : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Latitude:",
+                latitude != null ? latitude.toString() : "N/A"));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Longitude:",
+                longitude != null ? longitude.toString() : "N/A"));
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Status:",
                 String.format("%d%%", status)));
+        sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s ║\n", "Route Priority:",
+                String.valueOf(routePriority)));
         sb.append(String.format("║ %-" + labelWidth + "s%-" + contentWidth + "s  ║\n", "Last Updated:",
                 formattedTimestamp));
         sb.append("╚════════════════════════════════════════════════════════════════╝");
