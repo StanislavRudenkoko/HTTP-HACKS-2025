@@ -122,3 +122,128 @@ When janitors empty a bin, they must reset it so the system knows it’s empty.
    The reply should say the bin is **empty (0)**.
 
 ---
+### 🗄️ Step 5: PostgreSQL Database & Java TUI Setup
+
+The Java TUI (Terminal User Interface) allows you to manage trashcan data directly in the database through a terminal interface.
+
+#### 📋 Prerequisites
+
+Before running the Java TUI, make sure you have:
+
+- **Java Development Kit (JDK) 11 or higher** installed
+    - Check your version: `java -version`
+    - Download: [Oracle JDK](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
+- **PostgreSQL JDBC Driver** (included in the project)
+- **Database connection credentials** (provided by us)
+
+#### 📦 Dependencies
+
+The Java TUI uses **Gradle** to manage dependencies automatically. The following are included:
+
+- **PostgreSQL JDBC Driver** (version 42.7.3)
+    - Automatically downloaded and managed by Gradle
+    - No manual installation required
+
+#### 🔧 Database Setup
+
+The database is already set up and accessible through the provided connection. You don't need to create or configure the database yourself — just connect using the credentials provided by us.
+
+#### 🚀 Running the Java TUI
+
+You have two options for running the Java TUI:
+
+##### Option A: Building and Running the JAR (For Development)
+
+This project uses **Gradle** to build the application. Gradle automatically downloads and manages all dependencies, including the PostgreSQL JDBC driver.
+
+1. **Navigate to the project directory:**
+
+   ```bash
+   cd HTTP-HACKS-2025
+   ```
+
+2. **Build the JAR file (downloads dependencies and compiles):**
+
+   ```bash
+   ./gradlew jar
+   ```
+
+   This will automatically download the PostgreSQL JDBC driver and compile all Java files into a runnable JAR.
+
+3. **Run the TUI:**
+
+   ```bash
+   java -jar build/libs/TrashcanTUI.jar
+   ```
+
+   > 💡 **Note:** The first time you build, it may take a few minutes to download dependencies. Subsequent builds will be much faster.
+
+#### 🔌 Connecting to the Database
+
+When you start the TUI, you'll see a menu. Select **option 1** to connect to the database.
+
+Enter the following connection details:
+
+- **DB URL:** `jdbc:postgresql://6.tcp.us-cal-1.ngrok.io:17425/trash_db`
+- **Username:** (Provided by us)
+- **Password:** (Provided by us)
+
+> 💡 **Note:** The database connection is already configured. You only need the username and password credentials to connect.
+
+#### 📖 Using the Java TUI
+
+Once connected, you'll see the main menu:
+
+![alt text](https://github.com/StanislavRudenkoko/HTTP-HACKS-2025/blob/master/images/selectMenu.png)
+
+**Available Operations:**
+
+| Option                          | Description                                   | Details                                          |
+| ------------------------------- | --------------------------------------------- | ------------------------------------------------ |
+| **1. Connect to Database**      | Establishes connection to PostgreSQL          | Enter URL, username, and password                |
+| **2. View Trashcans**           | Displays all trashcans in a formatted table   | Shows fresh data from database + unsaved entries |
+| **3. Add Trashcan**             | Creates a new trashcan entry (in memory)      | Enter name, location, status (0-100%), building, floor, latitude, longitude        |
+| **4. Update Trashcan**          | Modifies an existing trashcan                 | Enter ID, then update name, location, or status  |
+| **5. Delete Trashcan**          | Removes a trashcan from the database          | Requires confirmation before deletion            |
+| **6. Save Changes to Database** | Commits all in-memory changes to the database | Saves new entries, updates, and deletions        |
+| **7. Exit**                     | Closes the application                        | Warns if there are unsaved changes               |
+
+#### 📊 Understanding Status Values
+
+- **Status** is stored as a **percentage (currently only 0 or 100)** representing fill level:
+    - `0` = Empty
+    - `100` = Full
+
+When viewing trashcans, status is displayed as `##%` format.
+
+#### ⚠️ Important Notes
+
+- **Unsaved Changes:** The TUI works with an in-memory copy of data. Changes are only saved when you select **option 6**.
+- **Preview IDs:** New entries show preview IDs (what the ID will be after saving). These are listed in the warning message at the bottom of the table.
+- **Fresh Data:** Option 2 (View Trashcans) always fetches the latest data from the database, so you'll see the most up-to-date information.
+- **Connection:** You must connect to the database (option 1) before using any other features.
+
+#### 🐛 Troubleshooting
+
+**Connection Issues:**
+
+- Verify your username and password are correct (contact us if needed)
+- Ensure you have an active internet connection (the database is accessed remotely)
+- If the connection fails, the ngrok tunnel may be inactive — contact us
+
+**Compilation Errors:**
+
+- Ensure JDK is installed: `java -version` (should show version 11 or higher)
+- Make sure Gradle is working: `./gradlew --version` (or `gradlew.bat --version` on Windows)
+- If dependencies fail to download, check your internet connection
+- Verify all Java files are in `src/main/java/`
+
+**Runtime Errors:**
+
+- If using `./gradlew run`, dependencies are automatically included — no need to manually set classpath
+- Verify you're using the exact database URL: `jdbc:postgresql://6.tcp.us-cal-1.ngrok.io:17425/trash_db`
+- Double-check your username and password credentials
+- If you see "ClassNotFoundException" for PostgreSQL driver, try running `./gradlew build` again to ensure dependencies are downloaded
+
+---
+

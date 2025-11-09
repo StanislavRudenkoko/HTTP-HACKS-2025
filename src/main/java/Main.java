@@ -201,7 +201,12 @@ public class Main {
                         nextPreviewId,
                         t.getName(),
                         t.getLocation(),
+                        t.getBuilding(),
+                        t.getFloor(),
+                        t.getLatitude(),
+                        t.getLongitude(),
                         t.getStatus(),
+                        t.getRoutePriority(),
                         t.getLastUpdated());
                 displayTrashcans.add(displayCopy);
                 previewIds.add(nextPreviewId);
@@ -263,7 +268,12 @@ public class Main {
                                     id, // Use preview ID for display
                                     t.getName(),
                                     t.getLocation(),
+                                    t.getBuilding(),
+                                    t.getFloor(),
+                                    t.getLatitude(),
+                                    t.getLongitude(),
                                     t.getStatus(),
+                                    t.getRoutePriority(),
                                     t.getLastUpdated());
                             break;
                         }
@@ -308,22 +318,53 @@ public class Main {
         String location = scanner.nextLine().trim();
         // Location can be empty/null
 
-        System.out.print("Enter status (0-100, percentage): ");
-        String statusInput = scanner.nextLine().trim();
-        int status;
-        try {
-            status = Integer.parseInt(statusInput);
-            if (status < 0 || status > 100) {
-                System.out.println("[ERROR] Error: Status must be between 0 and 100 (percentage).");
+        System.out.print("Enter building: ");
+        String building = scanner.nextLine().trim();
+        // Building can be empty/null
+
+        System.out.print("Enter floor (or press Enter to skip): ");
+        String floorInput = scanner.nextLine().trim();
+        Integer floor = null;
+        if (!floorInput.isEmpty()) {
+            try {
+                floor = Integer.parseInt(floorInput);
+            } catch (NumberFormatException e) {
+                System.out.println("[ERROR] Error: Floor must be a valid integer.");
                 return;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("[ERROR] Error: Status must be a valid integer between 0 and 100.");
-            return;
         }
 
+        System.out.print("Enter latitude (or press Enter to skip): ");
+        String latInput = scanner.nextLine().trim();
+        java.math.BigDecimal latitude = null;
+        if (!latInput.isEmpty()) {
+            try {
+                latitude = new java.math.BigDecimal(latInput);
+            } catch (NumberFormatException e) {
+                System.out.println("[ERROR] Error: Latitude must be a valid decimal number.");
+                return;
+            }
+        }
+
+        System.out.print("Enter longitude (or press Enter to skip): ");
+        String lonInput = scanner.nextLine().trim();
+        java.math.BigDecimal longitude = null;
+        if (!lonInput.isEmpty()) {
+            try {
+                longitude = new java.math.BigDecimal(lonInput);
+            } catch (NumberFormatException e) {
+                System.out.println("[ERROR] Error: Longitude must be a valid decimal number.");
+                return;
+            }
+        }
+
+        // Status defaults to 0 (empty)
+        int status = 0;
+        int routePriority = 0; // Default route priority
+
         // Create trashcan with temporary negative ID
-        Trashcan trashcan = new Trashcan(nextTempId--, name, location, status,
+        Trashcan trashcan = new Trashcan(nextTempId--, name, location, building, floor, latitude, longitude, status,
+                routePriority,
                 new Timestamp(System.currentTimeMillis()));
         inMemoryTrashcans.add(trashcan);
         hasUnsavedChanges = true;
@@ -415,8 +456,10 @@ public class Main {
             }
         }
 
-        // Update in memory
-        Trashcan updatedTrashcan = new Trashcan(id, name, location, status, new Timestamp(System.currentTimeMillis()));
+        // Update in memory - preserve existing fields that weren't changed
+        Trashcan updatedTrashcan = new Trashcan(id, name, location, existingTrashcan.getBuilding(),
+                existingTrashcan.getFloor(), existingTrashcan.getLatitude(), existingTrashcan.getLongitude(),
+                status, existingTrashcan.getRoutePriority(), new Timestamp(System.currentTimeMillis()));
         inMemoryTrashcans.set(index, updatedTrashcan);
         hasUnsavedChanges = true;
         System.out.println("[OK] Trashcan updated in memory. Use option 6 to save to database.");
@@ -498,13 +541,25 @@ public class Main {
             for (Trashcan current : inMemoryTrashcans) {
                 if (current.getId() == original.getId()) {
                     found = true;
-                    // Check if it changed (handle null locations)
+                    // Check if any field changed
                     String origLocation = original.getLocation() != null ? original.getLocation() : "";
                     String currLocation = current.getLocation() != null ? current.getLocation() : "";
+                    String origBuilding = original.getBuilding() != null ? original.getBuilding() : "";
+                    String currBuilding = current.getBuilding() != null ? current.getBuilding() : "";
+                    boolean floorChanged = (original.getFloor() == null && current.getFloor() != null) ||
+                            (original.getFloor() != null && !original.getFloor().equals(current.getFloor()));
+                    boolean latChanged = (original.getLatitude() == null && current.getLatitude() != null) ||
+                            (original.getLatitude() != null && !original.getLatitude().equals(current.getLatitude()));
+                    boolean lonChanged = (original.getLongitude() == null && current.getLongitude() != null) ||
+                            (original.getLongitude() != null
+                                    && !original.getLongitude().equals(current.getLongitude()));
 
                     if (!original.getName().equals(current.getName()) ||
                             !origLocation.equals(currLocation) ||
-                            original.getStatus() != current.getStatus()) {
+                            !origBuilding.equals(currBuilding) ||
+                            floorChanged || latChanged || lonChanged ||
+                            original.getStatus() != current.getStatus() ||
+                            original.getRoutePriority() != current.getRoutePriority()) {
                         toUpdate.add(current);
                     }
                     break;
@@ -520,7 +575,8 @@ public class Main {
 
         // Insert new items
         for (Trashcan t : toInsert) {
-            Trashcan newTrashcan = new Trashcan(t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
+            Trashcan newTrashcan = new Trashcan(t.getName(), t.getLocation(), t.getBuilding(), t.getFloor(),
+                    t.getLatitude(), t.getLongitude(), t.getStatus(), t.getRoutePriority(), t.getLastUpdated());
             trashcanService.addTrashcan(newTrashcan);
             totalOperations++;
         }
@@ -566,8 +622,10 @@ public class Main {
 
         // Create deep copies for both lists
         for (Trashcan t : dbTrashcans) {
-            Trashcan copy1 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
-            Trashcan copy2 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getStatus(), t.getLastUpdated());
+            Trashcan copy1 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getBuilding(), t.getFloor(),
+                    t.getLatitude(), t.getLongitude(), t.getStatus(), t.getRoutePriority(), t.getLastUpdated());
+            Trashcan copy2 = new Trashcan(t.getId(), t.getName(), t.getLocation(), t.getBuilding(), t.getFloor(),
+                    t.getLatitude(), t.getLongitude(), t.getStatus(), t.getRoutePriority(), t.getLastUpdated());
             inMemoryTrashcans.add(copy1);
             originalTrashcans.add(copy2);
         }
