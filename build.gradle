@@ -48,4 +48,64 @@ jar {
 
     // ✅ Ignore duplicates like META-INF/LICENSE.txt
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    // Set the output JAR name
+    archiveBaseName = 'TrashcanTUI'
+    archiveVersion = ''
 }
+
+// Task to create a Windows batch file for easy execution
+task createWindowsLauncher {
+    description = 'Creates a Windows .bat launcher file'
+    group = 'distribution'
+    
+    doLast {
+        def batFile = file("${projectDir}/TrashcanTUI.bat")
+        def jarFile = "${project.buildDir}/libs/TrashcanTUI.jar"
+        
+        batFile.text = """@echo off
+java -jar "${jarFile}"
+pause
+"""
+        println "Created ${batFile}"
+    }
+}
+
+// Task to create a native Windows executable using jpackage (requires Java 14+)
+task createExe(type: Exec) {
+    description = 'Creates a native Windows .exe using jpackage'
+    group = 'distribution'
+    
+    onlyIf {
+        // Check if jpackage is available (Java 14+)
+        def javaVersion = System.getProperty('java.version')
+        def majorVersion = javaVersion.split('\\.')[0].toInteger()
+        majorVersion >= 14
+    }
+    
+    def jarFile = "${project.buildDir}/libs/TrashcanTUI.jar"
+    def outputDir = "${project.buildDir}/dist/exe"
+    
+    commandLine 'jpackage',
+        '--input', "${project.buildDir}/libs",
+        '--name', 'TrashcanTUI',
+        '--main-jar', 'TrashcanTUI.jar',
+        '--main-class', 'Main',
+        '--type', 'exe',
+        '--dest', outputDir,
+        '--win-shortcut',
+        '--win-menu'
+    
+    doFirst {
+        println "Creating Windows executable..."
+        println "This requires Java 14+ and may take a few minutes..."
+    }
+    
+    doLast {
+        println "Executable created in: ${outputDir}"
+    }
+}
+
+// Make createExe depend on jar
+createExe.dependsOn jar
+createWindowsLauncher.dependsOn jar
